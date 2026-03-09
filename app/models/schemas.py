@@ -1,0 +1,185 @@
+import uuid
+from enum import StrEnum
+
+from pydantic import BaseModel, Field, HttpUrl
+
+
+# ── Enums ─────────────────────────────────────────────────────────────────────
+
+class GarmentCategory(StrEnum):
+    SHIRT = "shirt"
+    PANTS = "pants"
+    SHOES = "shoes"
+    JACKET = "jacket"
+    DRESS = "dress"
+    SKIRT = "skirt"
+    OTHER = "other"
+
+
+# ── Detection ─────────────────────────────────────────────────────────────────
+
+class BoundingBox(BaseModel):
+    x_min: float
+    y_min: float
+    x_max: float
+    y_max: float
+    confidence: float
+
+
+class DetectedGarment(BaseModel):
+    category: GarmentCategory
+    bounding_box: BoundingBox
+    crop_b64: str | None = None  # base64-encoded cropped image (optional, for debug)
+
+
+# ── Search ────────────────────────────────────────────────────────────────────
+
+class VectorMatch(BaseModel):
+    product_id: str
+    score: float
+    category: GarmentCategory
+
+
+# ── Seller ────────────────────────────────────────────────────────────────────
+
+class SellerResponse(BaseModel):
+    id: uuid.UUID
+    name: str
+    city: str | None = None
+    country: str | None = None
+    website: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
+# ── Product ───────────────────────────────────────────────────────────────────
+
+class ProductResponse(BaseModel):
+    id: uuid.UUID
+    name: str
+    brand: str | None = None
+    category: GarmentCategory
+    price: float
+    currency: str
+    image_url: str | None = None
+    product_url: str | None = None
+    seller: SellerResponse | None = None
+    similarity_score: float = Field(0.0, description="Final ranked score")
+    is_local: bool = False
+
+    model_config = {"from_attributes": True}
+
+
+# ── Detection Response ───────────────────────────────────────────────────────
+
+class ClothingDetectionResponse(BaseModel):
+    """Structured detection result with the three target clothing categories."""
+
+    shirts: list[DetectedGarment] = Field(
+        default_factory=list,
+        description="All shirt/top detections above the confidence threshold",
+    )
+    pants: list[DetectedGarment] = Field(
+        default_factory=list,
+        description="All pants/trousers detections above the confidence threshold",
+    )
+    shoes: list[DetectedGarment] = Field(
+        default_factory=list,
+        description="All footwear detections above the confidence threshold",
+    )
+    total_detections: int = Field(
+        0,
+        description="Total number of target garments found",
+    )
+
+    @classmethod
+    def from_detections(cls, detections: list["DetectedGarment"]) -> "ClothingDetectionResponse":
+        """Build a ClothingDetectionResponse from a flat list of DetectedGarment."""
+        shirts = [d for d in detections if d.category == GarmentCategory.SHIRT]
+        pants  = [d for d in detections if d.category == GarmentCategory.PANTS]
+        shoes  = [d for d in detections if d.category == GarmentCategory.SHOES]
+        return cls(
+            shirts=shirts,
+            pants=pants,
+            shoes=shoes,
+            total_detections=len(shirts) + len(pants) + len(shoes),
+        )
+
+
+# ── API Request / Response ────────────────────────────────────────────────────
+
+class RecommendationRequest(BaseModel):
+    budget: float = Field(..., gt=0, description="Maximum price per item in USD")
+    user_latitude: float | None = Field(None, ge=-90, le=90)
+    user_longitude: float | None = Field(None, ge=-180, le=180)
+    top_n: int = Field(5, ge=1, le=50, description="Results to return per garment type")
+
+
+class GarmentRecommendations(BaseModel):
+    category: GarmentCategory
+    items: list[ProductResponse]
+
+
+class RecommendationResponse(BaseModel):
+    results: list[GarmentRecommendations]
+    detected_items: list[GarmentCategory]
+    total_matches: int
+
+
+# ── Catalog Ingestion ─────────────────────────────────────────────────────────
+
+class ProductIngestRequest(BaseModel):
+    name: str
+    brand: str | None = None
+    description: str | None = None
+    category: GarmentCategory
+    price: float = Field(..., gt=0)
+    currency: str = "USD"
+    image_url: HttpUrl
+    product_url: HttpUrl | None = None
+    seller_id: uuid.UUID | None = None
+
+
+class ProductIngestResponse(BaseModel):
+    product_id: uuid.UUID
+    vector_id: str
+    message: str = "Product indexed successfully"
+
+
+# ── Pipeline recommendation ──────────────────────────────────────────────────
+
+class PipelineMatch(BaseModel):
+    """A single Pinecone hit returned by the recommendation pipeline."""
+
+    product_id: str = Field(..., description="Vector ID / product UUID in the index")
+    score: float = Field(..., description="Cosine similarity score (0–1)")
+    metadata: dict = Field(default_factory=dict)
+
+
+class PipelineCategoryResult(BaseModel):
+    """Top matches for one garment category."""
+
+    category: GarmentCategory
+    detection_confidence: float = Field(
+        ..., description="YOLO confidence for the highest-confidence crop in this category"
+    )
+    matches: list[PipelineMatch]
+
+
+class PipelineRecommendationResponse(BaseModel):
+    """Full response from the standalone recommendation pipeline."""
+
+    shirts: list[PipelineCategoryResult] = Field(default_factory=list)
+    pants: list[PipelineCategoryResult] = Field(default_factory=list)
+    shoes: list[PipelineCategoryResult] = Field(default_factory=list)
+    total_detections: int
+    total_matches: int
+
+
+# ── Health ────────────────────────────────────────────────────────────────────
+
+class HealthResponse(BaseModel):
+    status: str
+    database: str
+    pinecone: str
+    version: str = "1.0.0"

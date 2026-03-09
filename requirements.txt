@@ -1,0 +1,33 @@
+# FastAPI
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+
+# Database
+sqlalchemy[asyncio]==2.0.35
+asyncpg==0.29.0
+alembic==1.13.3
+
+# Pinecone
+pinecone-client==4.1.2
+
+# ML
+torch==2.4.1
+torchvision==0.19.1
+transformers==4.44.2
+ultralytics==8.2.103
+Pillow==10.4.0
+numpy==1.26.4
+
+# HTTP client (ingestion image download)
+httpx==0.27.2
+
+# Config
+pydantic-settings==2.5.2
+
+# Testing
+pytest==8.3.3
+pytest-asyncio==0.24.0
+pytest-mock==3.14.0
+
+# Linting
+ruff==0.6.9
