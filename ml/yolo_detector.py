@@ -11,9 +11,14 @@ from ultralytics import YOLO
 
 from app.core.config import get_settings
 from app.models.schemas import BoundingBox, DetectedGarment, GarmentCategory
+from ml.fashion_classes import build_label_map_from_model_names
+from ml.fashion_classes import is_fashion_model as _is_fashion_model
 
-# Maps YOLOv8 class indices → GarmentCategory.
-# Update these indices when fine-tuning on DeepFashion2 or similar.
+# ── Backward-compatible static LABEL_MAP (6-class legacy schema) ─────────────
+# This map is used as fallback when the model does not carry class names
+# that match any known fashion vocabulary (e.g. a vanilla COCO model).
+# Once yolov8_fashion.pt is fine-tuned and deployed, the detector uses its
+# own dynamic map built from model.names automatically.
 LABEL_MAP: dict[int, GarmentCategory] = {
     0: GarmentCategory.SHIRT,
     1: GarmentCategory.PANTS,
@@ -23,11 +28,22 @@ LABEL_MAP: dict[int, GarmentCategory] = {
     5: GarmentCategory.SKIRT,
 }
 
-# The three primary garment types this app focuses on.
+# ── Target categories for the recommendation pipeline ────────────────────────
+# The three garment types the pipeline focuses on (used by detect_targets).
 TARGET_CATEGORIES: frozenset[GarmentCategory] = frozenset({
     GarmentCategory.SHIRT,
     GarmentCategory.PANTS,
     GarmentCategory.SHOES,
+})
+
+# Extended set — includes jacket, dress, skirt for broader detection
+ALL_FASHION_CATEGORIES: frozenset[GarmentCategory] = frozenset({
+    GarmentCategory.SHIRT,
+    GarmentCategory.PANTS,
+    GarmentCategory.SHOES,
+    GarmentCategory.JACKET,
+    GarmentCategory.DRESS,
+    GarmentCategory.SKIRT,
 })
 
 
@@ -42,20 +58,66 @@ class _RawDetection:
 
 
 class YOLODetector:
-    """Wraps a fine-tuned YOLOv8 model for garment detection."""
+    """
+    Wraps a YOLOv8 model for garment detection.
+
+    Supports two modes automatically:
+    ─────────────────────────────────
+    Fashion model (yolov8_fashion.pt after fine-tuning)
+        model.names contains clothing terms such as "shirt", "pants", "shoes".
+        The label map is built dynamically from model.names via
+        ``ml.fashion_classes.build_label_map_from_model_names``, so any
+        fine-tuned model works without code changes.
+
+    COCO base model (yolov8n.pt / yolov8s.pt etc.)
+        model.names contains COCO-80 terms ("person", "car", …).
+        Most map to GarmentCategory.OTHER; a handful of accessory classes
+        (handbag, backpack, tie) also map to OTHER.
+        In this mode ``is_fashion_model`` is False and a diagnostics warning
+        is issued so the operator knows to run the fine-tuning pipeline.
+
+    After running ``scripts/train_fashion_yolo.py``, replace
+    ``ml/models/yolov8_fashion.pt`` with the trained weights.  The next
+    application restart will pick up the new model automatically.
+    """
 
     def __init__(self) -> None:
         settings = get_settings()
         self.model = YOLO(settings.yolo_model_path)
         self.confidence_threshold = settings.yolo_confidence_threshold
 
+        # ── Build label map dynamically from the loaded model's class names ──
+        # This works for any model — COCO, DeepFashion2, Fashionpedia, or the
+        # app-native 13-class fine-tuned model.
+        self._label_map: dict[int, GarmentCategory] = \
+            build_label_map_from_model_names(self.model.names)
+
+        # ── Diagnostics ──────────────────────────────────────────────────────
+        self.is_fashion_model: bool = _is_fashion_model(self.model.names)
+        self.model_class_names: dict[int, str] = dict(self.model.names)
+
+        if not self.is_fashion_model:
+            import warnings
+            warnings.warn(
+                f"[YOLODetector] Loaded model has {len(self.model.names)} COCO-style "
+                "classes and is NOT fashion-specific. "
+                "Garment detection will be very limited until you fine-tune the model. "
+                "Run: python scripts/train_fashion_yolo.py",
+                stacklevel=2,
+            )
+
+    # ── Core inference ────────────────────────────────────────────────────────
+
     def detect(self, image: Image.Image) -> list[DetectedGarment]:
         """
         Run inference on a single PIL Image.
 
+        Uses the dynamic label map built from the model's own class names,
+        so the same code works for any fine-tuned model without changes.
+
         Returns:
             List of DetectedGarment, one per garment found above the
-            confidence threshold.
+            confidence threshold, ordered by descending confidence.
         """
         img_array = np.array(image.convert("RGB"))
         results = self.model(img_array, conf=self.confidence_threshold, verbose=False)
@@ -64,10 +126,12 @@ class YOLODetector:
         for result in results:
             boxes = result.boxes
             for box in boxes:
-                cls_idx = int(box.cls[0].item())
-                category = LABEL_MAP.get(cls_idx, GarmentCategory.OTHER)
-                x_min, y_min, x_max, y_max = box.xyxy[0].tolist()
+                cls_idx    = int(box.cls[0].item())
                 confidence = float(box.conf[0].item())
+                x_min, y_min, x_max, y_max = box.xyxy[0].tolist()
+
+                # Use dynamic map; fall back to OTHER for unknown indices
+                category = self._label_map.get(cls_idx, GarmentCategory.OTHER)
 
                 detections.append(
                     DetectedGarment(
@@ -82,6 +146,8 @@ class YOLODetector:
                     )
                 )
 
+        # Sort by descending confidence so the highest-confidence garments come first
+        detections.sort(key=lambda d: d.bounding_box.confidence, reverse=True)
         return detections
 
     def detect_targets(
@@ -92,11 +158,20 @@ class YOLODetector:
         """
         Run detection and return only garments whose category is in *categories*.
 
-        By default this returns shirt, pants, and shoes only — the three items
-        needed for the recommendation pipeline.  Pass a custom frozenset to
-        override at call-site.
+        By default returns shirt, pants, and shoes only — the three items
+        needed for the recommendation pipeline.  Pass ``ALL_FASHION_CATEGORIES``
+        to include jacket, dress, and skirt as well.
         """
         return [g for g in self.detect(image) if g.category in categories]
+
+    def detect_all_fashion(self, image: Image.Image) -> list[DetectedGarment]:
+        """
+        Convenience wrapper: detect all six primary fashion categories
+        (shirt, pants, shoes, jacket, dress, skirt).
+        """
+        return self.detect_targets(image, ALL_FASHION_CATEGORIES)
+
+    # ── Async wrappers ────────────────────────────────────────────────────────
 
     async def detect_async(self, image: Image.Image) -> list[DetectedGarment]:
         """Non-blocking wrapper — runs detect() in the default thread-pool."""
@@ -111,6 +186,37 @@ class YOLODetector:
         """Non-blocking version of detect_targets."""
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self.detect_targets, image, categories)
+
+    async def detect_all_fashion_async(
+        self, image: Image.Image
+    ) -> list[DetectedGarment]:
+        """Non-blocking version of detect_all_fashion."""
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, self.detect_all_fashion, image)
+
+    # ── Diagnostics ───────────────────────────────────────────────────────────
+
+    def model_summary(self) -> dict:
+        """
+        Return a summary dict useful for health checks and logging.
+
+        Example return value::
+
+            {
+                "model_path": "ml/models/yolov8_fashion.pt",
+                "is_fashion_model": True,
+                "num_classes": 13,
+                "class_names": {0: "shirt", 1: "pants", ...},
+                "confidence_threshold": 0.4,
+            }
+        """
+        return {
+            "model_path": str(get_settings().yolo_model_path),
+            "is_fashion_model": self.is_fashion_model,
+            "num_classes": len(self.model_class_names),
+            "class_names": self.model_class_names,
+            "confidence_threshold": self.confidence_threshold,
+        }
 
 
 @lru_cache(maxsize=1)

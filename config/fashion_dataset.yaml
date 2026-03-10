@@ -1,0 +1,54 @@
+# config/fashion_dataset.yaml
+# ─────────────────────────────────────────────────────────────────────────────
+# YOLOv8 dataset configuration for app-native fashion detection.
+#
+# Class order MUST match ml/fashion_classes.APP_CLASS_NAMES exactly.
+# All training scripts (prepare_deepfashion2.py, prepare_fashion_roboflow.py)
+# remap their source annotations to this 13-class schema.
+#
+# Usage
+# -----
+#   python scripts/train_fashion_yolo.py
+#   # or directly:
+#   yolo detect train data=config/fashion_dataset.yaml model=yolov8s.pt epochs=100
+#
+# Directory layout expected under `path`
+# ───────────────────────────────────────
+#   data/fashion_dataset/
+#   ├── images/
+#   │   ├── train/   ← JPEG/PNG images
+#   │   ├── val/
+#   │   └── test/
+#   └── labels/
+#       ├── train/   ← YOLO .txt annotation files (same stem as image)
+#       ├── val/
+#       └── test/
+#
+# Each .txt file has one row per garment:
+#   <class_idx> <x_center> <y_center> <width> <height>
+# All coordinates are normalised to [0, 1] relative to image dimensions.
+# ─────────────────────────────────────────────────────────────────────────────
+
+path: data/fashion_dataset   # dataset root (relative to repo root)
+train: images/train
+val:   images/val
+test:  images/test
+
+# Number of classes
+nc: 13
+
+# Class names — MUST match ml/fashion_classes.APP_CLASS_NAMES order
+names:
+  0:  shirt       # short-sleeve / long-sleeve dress shirts, polos
+  1:  t-shirt     # crew-neck / V-neck tees
+  2:  pants       # generic trousers, chinos, cargo pants
+  3:  jeans       # denim trousers
+  4:  shorts      # short trousers of any fabric
+  5:  shoes       # generic footwear (dress shoes, loafers, heels)
+  6:  sneakers    # athletic / casual trainers
+  7:  jacket      # blazers, windbreakers, denim jackets
+  8:  coat        # overcoats, trench coats, heavy outerwear
+  9:  dress       # full-length dresses and jumpsuits
+  10: skirt       # mini / midi / maxi skirts
+  11: bag         # handbags, backpacks, clutches
+  12: hat         # caps, beanies, wide-brim hats
