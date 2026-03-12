@@ -29,7 +29,7 @@
 # All coordinates are normalised to [0, 1] relative to image dimensions.
 # ─────────────────────────────────────────────────────────────────────────────
 
-path: data/fashion_dataset   # dataset root (relative to repo root)
+path: ../data/fashion_dataset   # dataset root (relative to this YAML file)
 train: images/train
 val:   images/val
 test:  images/test

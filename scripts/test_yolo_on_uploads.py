@@ -2,24 +2,33 @@
 scripts/test_yolo_on_uploads.py
 ================================
 Runs YOLOv8 clothing detection on every image inside uploads/ and produces:
+  • Model diagnostics (fashion vs COCO, class names, label map)
   • A console report per image (category, confidence, bounding box, area %)
+  • Per-class detection statistics
   • Annotated images saved to uploads/annotated/ with boxes + labels drawn
 
 Usage:
-    python scripts/test_yolo_on_uploads.py
+    PINECONE_API_KEY=dummy python scripts/test_yolo_on_uploads.py
 """
 from __future__ import annotations
 
+import os
 import sys
+from collections import Counter
 from pathlib import Path
 
 # ── make project root importable ─────────────────────────────────────────────
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+os.environ.setdefault("PINECONE_API_KEY", "dummy")
+
+import warnings
+warnings.filterwarnings("ignore")
+
 from PIL import Image, ImageDraw, ImageFont
 
-from ml.yolo_detector import LABEL_MAP, TARGET_CATEGORIES, YOLODetector
+from ml.yolo_detector import TARGET_CATEGORIES, ALL_FASHION_CATEGORIES, YOLODetector
 from app.models.schemas import GarmentCategory
 
 # ── colour palette per category ──────────────────────────────────────────────
@@ -154,13 +163,46 @@ def main() -> None:
 
     print(f"\nLoading YOLOv8 model …")
     detector = YOLODetector()
+    summary = detector.model_summary()
     print(f"Model loaded.  Confidence threshold = {detector.confidence_threshold}")
-    print(f"Label map     : { {k: v.value for k, v in LABEL_MAP.items()} }")
-    print(f"Target cats   : {[c.value for c in TARGET_CATEGORIES]}")
-    print(f"Images found  : {[p.name for p in images]}")
+
+    # ── Model diagnostics ─────────────────────────────────────────────────
+    print(f"\n┌─ MODEL DIAGNOSTICS ─────────────────────────────────────────")
+    print(f"│  Model path       : {summary['model_path']}")
+    print(f"│  Is fashion model : {'✓ YES' if summary['is_fashion_model'] else '✗ NO (COCO)'}")
+    print(f"│  Number of classes: {summary['num_classes']}")
+    print(f"│  Class names      :")
+    for idx, name in sorted(summary['class_names'].items(), key=lambda x: int(x[0])):
+        cat = detector._label_map.get(int(idx), GarmentCategory.OTHER)
+        print(f"│    {idx:>3}: {name:<12} → {cat.value}")
+    print(f"│  Target cats      : {[c.value for c in TARGET_CATEGORIES]}")
+    print(f"└────────────────────────────────────────────────────────────────")
+
+    print(f"\nImages found  : {[p.name for p in images]}")
+
+    all_detections: list[GarmentCategory] = []
 
     for img_path in images:
         report_image(img_path, detector)
+        # Collect all detections for summary
+        img = Image.open(img_path).convert("RGB")
+        dets = detector.detect(img)
+        all_detections.extend(d.category for d in dets)
+
+    # ── Per-class statistics ──────────────────────────────────────────────
+    print(f"\n{'═' * 60}")
+    print("  PER-CLASS DETECTION STATISTICS")
+    print(f"{'═' * 60}")
+    counter = Counter(all_detections)
+    total = sum(counter.values())
+    print(f"  Total detections: {total}")
+    if counter:
+        for cat in GarmentCategory:
+            n = counter.get(cat, 0)
+            bar = "█" * min(30, n)
+            print(f"    {cat.value:<8} {n:4d}  {bar}")
+    else:
+        print("    (no detections — model may need more training)")
 
     print(f"\n{'═' * 60}")
     print("  Done.  Annotated images saved to uploads/annotated/")

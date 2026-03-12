@@ -61,6 +61,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from ml.dataset_validator import DatasetValidator  # noqa: E402
+
 CONFIG_YAML    = ROOT / "config" / "fashion_dataset.yaml"
 OUTPUT_WEIGHTS = ROOT / "ml" / "models" / "yolov8_fashion.pt"
 RUNS_DIR       = ROOT / "ml" / "runs"
@@ -112,46 +114,6 @@ def detect_device() -> str:
         pass
     return "cpu"
 
-
-def validate_dataset(data_yaml: Path) -> None:
-    """Raise SystemExit with helpful message if the dataset is missing."""
-    import yaml
-
-    if not data_yaml.exists():
-        sys.exit(
-            f"[ERROR] Dataset config not found: {data_yaml}\n"
-            "  Run one of the dataset preparation scripts first:\n"
-            "    python scripts/prepare_deepfashion2.py --df2-root /path/to/df2\n"
-            "    python scripts/prepare_fashion_roboflow.py"
-        )
-
-    with open(data_yaml) as f:
-        meta = yaml.safe_load(f)
-
-    dataset_root = Path(meta.get("path", ""))
-    if not dataset_root.is_absolute():
-        dataset_root = ROOT / dataset_root
-
-    train_img_dir = dataset_root / meta.get("train", "images/train")
-    val_img_dir   = dataset_root / meta.get("val",   "images/val")
-
-    if not train_img_dir.exists():
-        sys.exit(
-            f"[ERROR] Training images not found: {train_img_dir}\n"
-            "  Run a dataset preparation script first."
-        )
-
-    n_train = len(list(train_img_dir.glob("*")))
-    n_val   = len(list(val_img_dir.glob("*"))) if val_img_dir.exists() else 0
-
-    if n_train < 10:
-        sys.exit(
-            f"[ERROR] Only {n_train} training images found in {train_img_dir}.\n"
-            "  Need at least 10 images per class for meaningful fine-tuning.\n"
-            "  Recommended: ≥ 100 images total."
-        )
-
-    print(f"  Dataset: {n_train} train / {n_val} val images")
 
 
 def main() -> None:
@@ -238,7 +200,13 @@ def main() -> None:
     print()
 
     # ── Validate dataset ──────────────────────────────────────────────────────
-    validate_dataset(args.data)
+    try:
+        validator = DatasetValidator(args.data)
+        report    = validator.validate()
+        print(report.summary())
+        report.raise_if_invalid()
+    except (FileNotFoundError, ValueError) as exc:
+        sys.exit(f"[ERROR] {exc}")
 
     # ── Import ultralytics ────────────────────────────────────────────────────
     try:

@@ -46,6 +46,12 @@ ALL_FASHION_CATEGORIES: frozenset[GarmentCategory] = frozenset({
     GarmentCategory.SKIRT,
 })
 
+# ── Detection quality filter ──────────────────────────────────────────────────
+# Discard any detection whose bounding box covers less than this fraction of
+# the total image area.  Tiny boxes (< 0.5 % of the image) are almost always
+# false positives on accessories, text, or background textures.
+MIN_BOX_AREA_RATIO: float = 0.005
+
 
 @dataclass
 class _RawDetection:
@@ -129,6 +135,13 @@ class YOLODetector:
                 cls_idx    = int(box.cls[0].item())
                 confidence = float(box.conf[0].item())
                 x_min, y_min, x_max, y_max = box.xyxy[0].tolist()
+
+                # Discard tiny false-positive boxes (< MIN_BOX_AREA_RATIO of image)
+                img_w, img_h = image.size
+                box_area = (x_max - x_min) * (y_max - y_min)
+                img_area = img_w * img_h
+                if img_area > 0 and (box_area / img_area) < MIN_BOX_AREA_RATIO:
+                    continue
 
                 # Use dynamic map; fall back to OTHER for unknown indices
                 category = self._label_map.get(cls_idx, GarmentCategory.OTHER)
@@ -217,6 +230,71 @@ class YOLODetector:
             "class_names": self.model_class_names,
             "confidence_threshold": self.confidence_threshold,
         }
+
+    def annotate_image(
+        self,
+        image: Image.Image,
+        detections: list[DetectedGarment],
+    ) -> Image.Image:
+        """
+        Draw bounding boxes and category labels on *image*.
+
+        Returns a new PIL Image (the original is not mutated).  Useful for
+        debugging — dump the result to disk with ``img.save('debug.jpg')``.
+
+        Example::
+
+            detector = get_yolo_detector()
+            img      = Image.open("photo.jpg")
+            dets     = detector.detect(img)
+            debug    = detector.annotate_image(img, dets)
+            debug.save("debug_annotated.jpg")
+        """
+        from PIL import ImageDraw, ImageFont
+
+        # palette: one colour per GarmentCategory value
+        _COLOURS: dict[GarmentCategory, str] = {
+            GarmentCategory.SHIRT:   "#FF6B6B",
+            GarmentCategory.PANTS:   "#4ECDC4",
+            GarmentCategory.SHOES:   "#45B7D1",
+            GarmentCategory.JACKET:  "#96CEB4",
+            GarmentCategory.DRESS:   "#FFEAA7",
+            GarmentCategory.SKIRT:   "#DDA0DD",
+            GarmentCategory.OTHER:   "#B0B0B0",
+        }
+
+        annotated = image.copy().convert("RGB")
+        draw      = ImageDraw.Draw(annotated)
+
+        try:
+            font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", size=16)
+        except (OSError, IOError):
+            font = ImageFont.load_default()
+
+        for det in detections:
+            bb     = det.bounding_box
+            colour = _COLOURS.get(det.category, "#B0B0B0")
+            box    = [bb.x_min, bb.y_min, bb.x_max, bb.y_max]
+
+            # bounding box (3-px border)
+            draw.rectangle(box, outline=colour, width=3)
+
+            # label background + text
+            label = f"{det.category.value}  {bb.confidence:.0%}"
+            try:
+                text_bbox = draw.textbbox((bb.x_min, bb.y_min - 20), label, font=font)
+                draw.rectangle(text_bbox, fill=colour)
+            except AttributeError:
+                # Pillow < 9.2 does not have textbbox
+                pass
+            draw.text(
+                (bb.x_min + 2, bb.y_min - 20),
+                label,
+                fill="black",
+                font=font,
+            )
+
+        return annotated
 
 
 @lru_cache(maxsize=1)

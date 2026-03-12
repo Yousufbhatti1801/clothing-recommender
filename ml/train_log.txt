@@ -1,0 +1,62 @@
+
+============================================================
+  Fashion YOLOv8 Fine-tuning
+============================================================
+  Base model : yolov8s.pt
+  Dataset    : config/fashion_dataset.yaml
+  Epochs     : 100
+  Batch size : 16
+  Image size : 640
+  Device     : mps
+  Output     : /Users/aaple/Documents/clothing-recommender/ml/models/yolov8_fashion.pt
+
+  Dataset: 6516 train / 1158 val images
+
+Starting training … (this will take a while)
+
+New https://pypi.org/project/ultralytics/8.4.21 available 😃 Update with 'pip install -U ultralytics'
+Ultralytics YOLOv8.2.103 🚀 Python-3.11.7 torch-2.4.1 MPS (Apple M1)
+[34m[1mengine/trainer: [0mtask=detect, mode=train, model=yolov8s.pt, data=/Users/aaple/Documents/clothing-recommender/config/fashion_dataset.yaml, epochs=100, time=None, patience=50, batch=16, imgsz=640, save=True, save_period=10, cache=False, device=mps, workers=4, project=/Users/aaple/Documents/clothing-recommender/ml/runs, name=fashion_yolo3, exist_ok=False, pretrained=True, optimizer=SGD, verbose=True, seed=42, deterministic=True, single_cls=False, rect=False, cos_lr=False, close_mosaic=10, resume=False, amp=True, fraction=1.0, profile=False, freeze=None, multi_scale=False, overlap_mask=True, mask_ratio=4, dropout=0.0, val=True, split=val, save_json=False, save_hybrid=False, conf=None, iou=0.7, max_det=300, half=False, dnn=False, plots=True, source=None, vid_stride=1, stream_buffer=False, visualize=False, augment=False, agnostic_nms=False, classes=None, retina_masks=False, embed=None, show=False, save_frames=False, save_txt=False, save_conf=False, save_crop=False, show_labels=True, show_conf=True, show_boxes=True, line_width=None, format=torchscript, keras=False, optimize=False, int8=False, dynamic=False, simplify=True, opset=None, workspace=4, nms=False, lr0=0.01, lrf=0.01, momentum=0.937, weight_decay=0.0005, warmup_epochs=3.0, warmup_momentum=0.8, warmup_bias_lr=0.1, box=7.5, cls=0.5, dfl=1.5, pose=12.0, kobj=1.0, label_smoothing=0.0, nbs=64, hsv_h=0.015, hsv_s=0.7, hsv_v=0.4, degrees=0.0, translate=0.1, scale=0.5, shear=0.0, perspective=0.0, flipud=0.0, fliplr=0.5, bgr=0.0, mosaic=1.0, mixup=0.1, copy_paste=0.0, auto_augment=randaugment, erasing=0.4, crop_fraction=1.0, cfg=None, tracker=botsort.yaml, save_dir=/Users/aaple/Documents/clothing-recommender/ml/runs/fashion_yolo3
+Overriding model.yaml nc=80 with nc=13
+
+                   from  n    params  module                                       arguments                     
+  0                  -1  1       928  ultralytics.nn.modules.conv.Conv             [3, 32, 3, 2]                 
+  1                  -1  1     18560  ultralytics.nn.modules.conv.Conv             [32, 64, 3, 2]                
+  2                  -1  1     29056  ultralytics.nn.modules.block.C2f             [64, 64, 1, True]             
+  3                  -1  1     73984  ultralytics.nn.modules.conv.Conv             [64, 128, 3, 2]               
+  4                  -1  2    197632  ultralytics.nn.modules.block.C2f             [128, 128, 2, True]           
+  5                  -1  1    295424  ultralytics.nn.modules.conv.Conv             [128, 256, 3, 2]              
+  6                  -1  2    788480  ultralytics.nn.modules.block.C2f             [256, 256, 2, True]           
+  7                  -1  1   1180672  ultralytics.nn.modules.conv.Conv             [256, 512, 3, 2]              
+  8                  -1  1   1838080  ultralytics.nn.modules.block.C2f             [512, 512, 1, True]           
+  9                  -1  1    656896  ultralytics.nn.modules.block.SPPF            [512, 512, 5]                 
+ 10                  -1  1         0  torch.nn.modules.upsampling.Upsample         [None, 2, 'nearest']          
+ 11             [-1, 6]  1         0  ultralytics.nn.modules.conv.Concat           [1]                           
+ 12                  -1  1    591360  ultralytics.nn.modules.block.C2f             [768, 256, 1]                 
+ 13                  -1  1         0  torch.nn.modules.upsampling.Upsample         [None, 2, 'nearest']          
+ 14             [-1, 4]  1         0  ultralytics.nn.modules.conv.Concat           [1]                           
+ 15                  -1  1    148224  ultralytics.nn.modules.block.C2f             [384, 128, 1]                 
+ 16                  -1  1    147712  ultralytics.nn.modules.conv.Conv             [128, 128, 3, 2]              
+ 17            [-1, 12]  1         0  ultralytics.nn.modules.conv.Concat           [1]                           
+ 18                  -1  1    493056  ultralytics.nn.modules.block.C2f             [384, 256, 1]                 
+ 19                  -1  1    590336  ultralytics.nn.modules.conv.Conv             [256, 256, 3, 2]              
+ 20             [-1, 9]  1         0  ultralytics.nn.modules.conv.Concat           [1]                           
+ 21                  -1  1   1969152  ultralytics.nn.modules.block.C2f             [768, 512, 1]                 
+ 22        [15, 18, 21]  1   2121079  ultralytics.nn.modules.head.Detect           [13, [128, 256, 512]]         
+Model summary: 225 layers, 11,140,631 parameters, 11,140,615 gradients, 28.7 GFLOPs
+
+Transferred 349/355 items from pretrained weights
+Freezing layer 'model.22.dfl.conv.weight'
+[34m[1mtrain: [0mScanning /Users/aaple/Documents/clothing-recommender/data/fashion_dataset/labels/train...:   0%|          | 0/6516 [00:00<?, ?it/s][34m[1mtrain: [0mScanning /Users/aaple/Documents/clothing-recommender/data/fashion_dataset/labels/train... 333 images, 0 backgrounds, 0 corrupt:   5%|▌         | 333/6516 [00:00<00:01, 3325.78it/s][34m[1mtrain: [0mScanning /Users/aaple/Documents/clothing-recommender/data/fashion_dataset/labels/train... 794 images, 0 backgrounds, 0 corrupt:  12%|█▏        | 794/6516 [00:00<00:01, 4069.85it/s][34m[1mtrain: [0mScanning /Users/aaple/Documents/clothing-recommender/data/fashion_dataset/labels/train... 1252 images, 0 backgrounds, 0 corrupt:  19%|█▉        | 1252/6516 [00:00<00:01, 4292.14it/s][34m[1mtrain: [0mScanning /Users/aaple/Documents/clothing-recommender/data/fashion_dataset/labels/train... 1709 images, 0 backgrounds, 0 corrupt:  26%|██▌       | 1709/6516 [00:00<00:01, 4395.37it/s][34m[1mtrain: [0mScanning /Users/aaple/Documents/clothing-recommender/data/fashion_dataset/labels/train... 2163 images, 0 backgrounds, 0 corrupt:  33%|███▎      | 2163/6516 [00:00<00:00, 4445.72it/s][34m[1mtrain: [0mScanning /Users/aaple/Documents/clothing-recommender/data/fashion_dataset/labels/train... 2633 images, 0 backgrounds, 0 corrupt:  40%|████      | 2633/6516 [00:00<00:00, 4531.14it/s][34m[1mtrain: [0mScanning /Users/aaple/Documents/clothing-recommender/data/fashion_dataset/labels/train... 3087 images, 0 backgrounds, 0 corrupt:  47%|████▋     | 3087/6516 [00:00<00:00, 4486.82it/s][34m[1mtrain: [0mScanning /Users/aaple/Documents/clothing-recommender/data/fashion_dataset/labels/train... 3543 images, 0 backgrounds, 0 corrupt:  54%|█████▍    | 3543/6516 [00:00<00:00, 4509.48it/s][34m[1mtrain: [0mScanning /Users/aaple/Documents/clothing-recommender/data/fashion_dataset/labels/train... 4001 images, 0 backgrounds, 0 corrupt:  61%|██████▏   | 4001/6516 [00:00<00:00, 4530.06it/s][34m[1mtrain: [0mScanning /Users/aaple/Documents/clothing-recommender/data/fashion_dataset/labels/train... 4464 images, 0 backgrounds, 0 corrupt:  69%|██████▊   | 4464/6516 [00:01<00:00, 4556.17it/s][34m[1mtrain: [0mScanning /Users/aaple/Documents/clothing-recommender/data/fashion_dataset/labels/train... 4920 images, 0 backgrounds, 0 corrupt:  76%|███████▌  | 4920/6516 [00:01<00:00, 4551.04it/s][34m[1mtrain: [0mScanning /Users/aaple/Documents/clothing-recommender/data/fashion_dataset/labels/train... 5380 images, 0 backgrounds, 0 corrupt:  83%|████████▎ | 5380/6516 [00:01<00:00, 4563.22it/s][34m[1mtrain: [0mScanning /Users/aaple/Documents/clothing-recommender/data/fashion_dataset/labels/train... 5842 images, 0 backgrounds, 0 corrupt:  90%|████████▉ | 5842/6516 [00:01<00:00, 4575.29it/s][34m[1mtrain: [0mScanning /Users/aaple/Documents/clothing-recommender/data/fashion_dataset/labels/train... 6300 images, 0 backgrounds, 0 corrupt:  97%|█████████▋| 6300/6516 [00:01<00:00, 4576.28it/s][34m[1mtrain: [0mScanning /Users/aaple/Documents/clothing-recommender/data/fashion_dataset/labels/train... 6516 images, 0 backgrounds, 0 corrupt: 100%|██████████| 6516/6516 [00:01<00:00, 4488.36it/s]
+[34m[1mtrain: [0mNew cache created: /Users/aaple/Documents/clothing-recommender/data/fashion_dataset/labels/train.cache
+[34m[1mval: [0mScanning /Users/aaple/Documents/clothing-recommender/data/fashion_dataset/labels/val...:   0%|          | 0/1158 [00:00<?, ?it/s][34m[1mval: [0mScanning /Users/aaple/Documents/clothing-recommender/data/fashion_dataset/labels/val... 446 images, 0 backgrounds, 0 corrupt:  39%|███▊      | 446/1158 [00:00<00:00, 4453.86it/s][34m[1mval: [0mScanning /Users/aaple/Documents/clothing-recommender/data/fashion_dataset/labels/val... 904 images, 0 backgrounds, 0 corrupt:  78%|███████▊  | 904/1158 [00:00<00:00, 4514.46it/s][34m[1mval: [0mScanning /Users/aaple/Documents/clothing-recommender/data/fashion_dataset/labels/val... 1158 images, 0 backgrounds, 0 corrupt: 100%|██████████| 1158/1158 [00:00<00:00, 4532.94it/s]
+[34m[1mval: [0mNew cache created: /Users/aaple/Documents/clothing-recommender/data/fashion_dataset/labels/val.cache
+Plotting labels to /Users/aaple/Documents/clothing-recommender/ml/runs/fashion_yolo3/labels.jpg... 
+[34m[1moptimizer:[0m SGD(lr=0.01, momentum=0.937) with parameter groups 57 weight(decay=0.0), 64 weight(decay=0.0005), 63 bias(decay=0.0)
+Image sizes 640 train, 640 val
+Using 0 dataloader workers
+Logging results to [1m/Users/aaple/Documents/clothing-recommender/ml/runs/fashion_yolo3[0m
+Starting training for 100 epochs...
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+  0%|          | 0/408 [00:00<?, ?it/s]

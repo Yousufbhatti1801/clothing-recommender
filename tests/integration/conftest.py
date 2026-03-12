@@ -208,8 +208,13 @@ def build_pinecone_index_mock(
 
     index = MagicMock()
 
-    def _query(vector, top_k, namespace, include_metadata=False):  # noqa: ARG001
+    def _query(vector, top_k, namespace, include_metadata=False, filter=None, **kwargs):  # noqa: ARG001
         hits = data.get(namespace, [])
+        # Honour price filter if the mock metadata carries a "price" key
+        if filter and isinstance(filter, dict):
+            lte = (filter.get("price") or {}).get("$lte")
+            if lte is not None:
+                hits = [h for h in hits if h.get("metadata", {}).get("price", lte) <= lte]
         return {"matches": hits[:top_k]}
 
     index.query                = MagicMock(side_effect=_query)

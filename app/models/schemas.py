@@ -155,6 +155,12 @@ class PipelineMatch(BaseModel):
     score: float = Field(..., description="Cosine similarity score (0–1)")
     metadata: dict = Field(default_factory=dict)
 
+    # Convenience fields surfaced from Pinecone metadata (populated when
+    # the catalog was seeded with metadata via IngestionService).
+    price:     float | None = Field(None, description="Product price from catalog metadata")
+    brand:     str | None   = Field(None, description="Brand name from catalog metadata")
+    image_url: str | None   = Field(None, description="Product image URL from catalog metadata")
+
 
 class PipelineCategoryResult(BaseModel):
     """Top matches for one garment category."""

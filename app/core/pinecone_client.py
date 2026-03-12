@@ -1,19 +1,35 @@
-from pinecone import Pinecone, Index
+"""
+app/core/pinecone_client.py
+============================
+Thin shim that keeps the original public API (``init_pinecone`` /
+``get_pinecone_index``) working while delegating to the unified
+``PineconeVectorService`` singleton.
 
-from app.core.config import get_settings
+Both ``IngestionService`` (via FastAPI DI) and ``RecommendationPipeline``
+now share a single Pinecone connection, so the index is created at most
+once per process.
+"""
+from __future__ import annotations
 
-_pinecone_client: Pinecone | None = None
-_index: Index | None = None
+from pinecone import Index
 
 
 def init_pinecone() -> None:
-    global _pinecone_client, _index
-    settings = get_settings()
-    _pinecone_client = Pinecone(api_key=settings.pinecone_api_key)
-    _index = _pinecone_client.Index(settings.pinecone_index_name)
+    """Warm up the shared PineconeVectorService singleton.
+
+    Called by the FastAPI lifespan hook on startup so the Pinecone index
+    connection is established before the first request arrives.
+    """
+    from app.services.vector_store import get_vector_service
+    get_vector_service()
 
 
 def get_pinecone_index() -> Index:
-    if _index is None:
-        raise RuntimeError("Pinecone has not been initialised. Call init_pinecone() first.")
-    return _index
+    """Return the shared Pinecone ``Index`` used by all services.
+
+    Delegates to the ``PineconeVectorService`` singleton so every caller
+    (``IngestionService``, ``SearchService``, health checks) shares the
+    same underlying connection and index object.
+    """
+    from app.services.vector_store import get_vector_service
+    return get_vector_service()._index

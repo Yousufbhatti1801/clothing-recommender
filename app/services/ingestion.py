@@ -42,9 +42,18 @@ class IngestionService:
         product = await self._catalog.create_product(data)
         vector_id = str(product.id)
 
-        # ── Upsert to Pinecone ────────────────────────────────────────────
+        # ── Upsert to Pinecone (with metadata for server-side filtering) ─────
+        metadata = {
+            "price":     float(data.price),
+            "currency":  data.currency,
+            "brand":     data.brand or "",
+            "category":  data.category.value,
+            "name":      data.name,
+            "seller_id": str(data.seller_id) if data.seller_id else "",
+            "image_url": str(data.image_url),
+        }
         self._index.upsert(
-            vectors=[{"id": vector_id, "values": vector.tolist()}],
+            vectors=[{"id": vector_id, "values": vector.tolist(), "metadata": metadata}],
             namespace=data.category.value,
         )
 

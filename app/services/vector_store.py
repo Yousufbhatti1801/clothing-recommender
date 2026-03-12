@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Iterable, Sequence
 
 from pinecone import Index, Pinecone
@@ -65,14 +66,24 @@ class PineconeVectorService:
         namespace: str,
         top_k: int = 5,
         with_metadata: bool = True,
+        filter: dict | None = None,
     ) -> list[VectorResult]:
-        """Return the top-k most similar embeddings from Pinecone."""
-        response = self._index.query(
+        """
+        Return the top-k most similar embeddings from Pinecone.
+
+        Args:
+            filter: Optional Pinecone metadata filter, e.g.
+                    ``{"price": {"$lte": 100.0}}``.
+        """
+        query_kwargs: dict = dict(
             vector=list(values),
             top_k=top_k,
             namespace=namespace,
             include_metadata=with_metadata,
         )
+        if filter:
+            query_kwargs["filter"] = filter
+        response = self._index.query(**query_kwargs)
         matches = response.get("matches", [])
         results: list[VectorResult] = []
         for match in matches[:top_k]:
@@ -84,3 +95,9 @@ class PineconeVectorService:
                 )
             )
         return results
+
+
+@lru_cache(maxsize=1)
+def get_vector_service() -> "PineconeVectorService":
+    """Return the process-wide singleton PineconeVectorService."""
+    return PineconeVectorService()

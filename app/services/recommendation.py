@@ -58,9 +58,11 @@ class RecommendationService:
         crops = [c for _, c in detected_pairs]
         embeddings = await self._embedding.embed(crops)
 
-        # ── Stage 4: vector search (per garment) ─────────────────────────
+        # ── Stage 4: vector search (per garment, pre-filtered by budget) ────────
         search_pairs = [(emb, g.category) for emb, g in zip(embeddings, garments)]
-        matches = await self._search.search_many(search_pairs)
+        matches = await self._search.search_many(
+            search_pairs, max_price=request.budget
+        )
 
         # Group matches by category
         by_category: dict[GarmentCategory, list] = {}

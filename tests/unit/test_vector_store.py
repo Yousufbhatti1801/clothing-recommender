@@ -66,6 +66,29 @@ class TestUpsert:
         mock_index.upsert.assert_not_called()
 
 
+class TestQueryFilter:
+    def test_filter_forwarded_to_pinecone(self, mock_pinecone_client):
+        _, mock_index = mock_pinecone_client
+        mock_index.query.return_value = {"matches": []}
+
+        svc = PineconeVectorService()
+        price_filter = {"price": {"$lte": 50.0}}
+        svc.query(values=[0.1] * 512, namespace="shirt", top_k=5, filter=price_filter)
+
+        call_kwargs = mock_index.query.call_args.kwargs
+        assert call_kwargs["filter"] == price_filter
+
+    def test_no_filter_kwarg_when_none(self, mock_pinecone_client):
+        _, mock_index = mock_pinecone_client
+        mock_index.query.return_value = {"matches": []}
+
+        svc = PineconeVectorService()
+        svc.query(values=[0.1] * 512, namespace="shirt", top_k=5)
+
+        call_kwargs = mock_index.query.call_args.kwargs
+        assert "filter" not in call_kwargs
+
+
 class TestEnsureIndex:
     def test_does_not_recreate_existing_index(self, mock_pinecone_client):
         client, _ = mock_pinecone_client

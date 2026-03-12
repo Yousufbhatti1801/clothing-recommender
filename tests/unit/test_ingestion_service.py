@@ -82,3 +82,10 @@ class TestIngest:
 
         call_kwargs = mock_index.upsert.call_args.kwargs
         assert call_kwargs["namespace"] == "shoes"
+        # Metadata must be present and contain the core keys
+        vectors = call_kwargs["vectors"]
+        assert len(vectors) == 1
+        meta = vectors[0]["metadata"]
+        assert "price" in meta
+        assert "category" in meta
+        assert meta["category"] == "shoes"

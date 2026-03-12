@@ -17,7 +17,7 @@ from app.models.schemas import (
     PipelineRecommendationResponse,
 )
 from app.services.detect_and_embed import DetectAndEmbedPipeline, GarmentEmbedding
-from app.services.vector_store import PineconeVectorService
+from app.services.vector_store import PineconeVectorService, get_vector_service
 
 
 class RecommendationPipeline:
@@ -41,12 +41,22 @@ class RecommendationPipeline:
         top_k: int = 5,
     ) -> None:
         self._detect_embed = detect_embed or DetectAndEmbedPipeline()
-        self._vector_store = vector_store or PineconeVectorService()
+        self._vector_store = vector_store or get_vector_service()
         self._top_k = top_k
 
-    async def run(self, image: Image.Image) -> PipelineRecommendationResponse:
-        """Execute the full pipeline and return grouped recommendations."""
+    async def run(
+        self,
+        image: Image.Image,
+        budget: float | None = None,
+    ) -> PipelineRecommendationResponse:
+        """Execute the full pipeline and return grouped recommendations.
 
+        Args:
+            image:  PIL Image loaded from the uploaded file.
+            budget: Optional maximum price per item (USD).  When provided,
+                    a Pinecone server-side filter is applied so over-budget
+                    products never appear in results.
+        """
         # ── Steps 2-4: detect → crop → embed ────────────────────────────────
         pipeline_result = await self._detect_embed.run(image)
 
@@ -57,15 +67,17 @@ class RecommendationPipeline:
                 total_matches=0,
             )
 
+        price_filter = {"price": {"$lte": budget}} if budget is not None else None
+
         # ── Steps 5-6: search Pinecone per category, group results ──────────
         shirts_results = self._search_category(
-            pipeline_result.shirts, GarmentCategory.SHIRT
+            pipeline_result.shirts, GarmentCategory.SHIRT, price_filter=price_filter
         )
         pants_results = self._search_category(
-            pipeline_result.pants, GarmentCategory.PANTS
+            pipeline_result.pants, GarmentCategory.PANTS, price_filter=price_filter
         )
         shoes_results = self._search_category(
-            pipeline_result.shoes, GarmentCategory.SHOES
+            pipeline_result.shoes, GarmentCategory.SHOES, price_filter=price_filter
         )
 
         total_matches = (
@@ -86,6 +98,7 @@ class RecommendationPipeline:
         self,
         garment_embeddings: list[GarmentEmbedding],
         category: GarmentCategory,
+        price_filter: dict | None = None,
     ) -> list[PipelineCategoryResult]:
         """
         For every detected crop in a category, query Pinecone and build a
@@ -98,12 +111,16 @@ class RecommendationPipeline:
                 values=ge.embedding,
                 namespace=category.value,
                 top_k=self._top_k,
+                filter=price_filter,
             )
             matches = [
                 PipelineMatch(
                     product_id=hit.id,
                     score=round(hit.score, 4),
                     metadata=hit.metadata,
+                    price=hit.metadata.get("price"),
+                    brand=hit.metadata.get("brand") or None,
+                    image_url=hit.metadata.get("image_url") or None,
                 )
                 for hit in vector_hits
             ]

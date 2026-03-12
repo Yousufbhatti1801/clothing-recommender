@@ -3,6 +3,7 @@
 *.bin
 *.safetensors
 ml/models/
+ml/runs/
 .env
 __pycache__/
 *.pyc
@@ -11,4 +12,13 @@ __pycache__/
 *.egg-info/
 dist/
 build/
-.env.example
+
+# Generated training datasets (regenerate with scripts/prepare_fashionpedia.py)
+data/
+
+# User uploads (runtime files, not source code)
+uploads/*.jpg
+uploads/*.jpeg
+uploads/*.png
+uploads/*.webp
+uploads/annotated/
