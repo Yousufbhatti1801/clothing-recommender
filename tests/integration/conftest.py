@@ -13,13 +13,10 @@ Scope notes
 from __future__ import annotations
 
 import uuid
-from io import BytesIO
 from unittest.mock import AsyncMock, MagicMock
 
 import numpy as np
 import pytest
-import pytest_asyncio
-from PIL import Image
 
 from app.models.schemas import GarmentCategory
 from tests.conftest import make_garment, make_mock_product, make_mock_seller

@@ -15,7 +15,6 @@ from io import BytesIO
 import numpy as np
 from PIL import Image
 
-
 # ── JPEG ─────────────────────────────────────────────────────────────────────
 
 def make_jpeg(width: int = 640, height: int = 480,

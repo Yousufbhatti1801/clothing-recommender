@@ -6,8 +6,8 @@ parts of the app can reuse it without reloading the model.
 """
 from __future__ import annotations
 
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, List
 
 import numpy as np
 from PIL import Image
@@ -36,7 +36,7 @@ class ClipFileEmbeddingService:
         embeddings = self.embed_paths([image_path])
         return embeddings[0]
 
-    def embed_paths(self, image_paths: List[str]) -> list[np.ndarray]:
+    def embed_paths(self, image_paths: list[str]) -> list[np.ndarray]:
         """Embed multiple images from disk; returns one vector per path."""
         if not image_paths:
             return []

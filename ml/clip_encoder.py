@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from functools import lru_cache
 
 import numpy as np
@@ -10,6 +11,9 @@ from PIL import Image
 from transformers import CLIPModel, CLIPProcessor
 
 from app.core.config import get_settings
+from app.core.executors import get_ml_executor
+
+log = logging.getLogger(__name__)
 
 
 class CLIPEncoder:
@@ -18,6 +22,7 @@ class CLIPEncoder:
     def __init__(self) -> None:
         settings = get_settings()
         self.device = torch.device(settings.clip_device)
+        log.info("Loading CLIP model '%s' on device '%s'…", settings.clip_model_name, self.device)
         self.processor: CLIPProcessor = CLIPProcessor.from_pretrained(
             settings.clip_model_name
         )
@@ -25,6 +30,7 @@ class CLIPEncoder:
             settings.clip_model_name
         ).to(self.device)
         self.model.eval()
+        log.info("CLIP model loaded.")
 
     @torch.no_grad()
     def encode(self, images: list[Image.Image]) -> np.ndarray:
@@ -46,9 +52,9 @@ class CLIPEncoder:
         return features.cpu().numpy().astype(np.float32)
 
     async def encode_async(self, images: list[Image.Image]) -> np.ndarray:
-        """Non-blocking wrapper — runs encode() in the default thread-pool."""
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, self.encode, images)
+        """Non-blocking wrapper — runs encode() in the dedicated ML thread-pool."""
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(get_ml_executor(), self.encode, images)
 
 
 @lru_cache(maxsize=1)

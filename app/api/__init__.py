@@ -1,5 +1,6 @@
-from app.api.routes import catalog, detect, health, image_upload, pipeline, recommendations
 from fastapi import APIRouter
+
+from app.api.routes import catalog, detect, health, image_upload, pipeline, recommendations
 
 router = APIRouter()
 router.include_router(recommendations.router)

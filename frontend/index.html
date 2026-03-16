@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Clothing Recommender</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Hero Section -->
+        <header class="hero">
+            <div class="logo-container">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16 11H8V13H16V11Z" fill="url(#gradient)"/>
+                    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20Z" fill="url(#gradient)"/>
+                    <defs>
+                        <linearGradient id="gradient" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#8B5CF6"/>
+                            <stop offset="1" stop-color="#3B82F6"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <h1>AI Clothing Recommender</h1>
+            </div>
+            <p class="subtitle">Upload a photo of any outfit and our AI will recommend similar clothing you can buy right now.</p>
+        </header>
+
+        <!-- Main Content -->
+        <main>
+            <!-- Upload Zone -->
+            <section class="upload-section">
+                <div id="drop-zone" class="drop-zone">
+                    <input type="file" id="file-input" accept="image/jpeg, image/png, image/webp" hidden>
+                    <div class="drop-content">
+                        <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                        </svg>
+                        <p class="primary-text">Drag & Drop an image here</p>
+                        <p class="secondary-text">or <span class="browse-link">browse your files</span></p>
+                        <p class="hint-text">Supports JPG, PNG, WEBP</p>
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div id="loading" class="loading-container hidden">
+                    <div class="spinner"></div>
+                    <p>Detecting garments and finding matches...</p>
+                </div>
+                
+                <!-- Error State -->
+                <div id="error-message" class="error-message hidden"></div>
+            </section>
+
+            <!-- Results Section -->
+            <section id="results" class="results-section hidden">
+                <div class="summary-banner">
+                    <h2>Analysis Complete</h2>
+                    <p>Found <span id="total-detections" class="highlight">0</span> garments and <span id="total-matches" class="highlight">0</span> matching products.</p>
+                </div>
+
+                <!-- Dynamic grids injected via JS -->
+                <div id="shirts-container" class="category-container hidden">
+                    <h3>👕 Shirts Detected</h3>
+                    <div class="product-grid" id="shirts-grid"></div>
+                </div>
+
+                <div id="pants-container" class="category-container hidden">
+                    <h3>👖 Pants Detected</h3>
+                    <div class="product-grid" id="pants-grid"></div>
+                </div>
+
+                <div id="shoes-container" class="category-container hidden">
+                    <h3>👟 Shoes Detected</h3>
+                    <div class="product-grid" id="shoes-grid"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Template for a product card -->
+    <template id="product-card-template">
+        <a href="#" class="product-card" target="_blank" rel="noopener noreferrer">
+            <div class="image-wrapper">
+                <img src="" alt="Product Image" loading="lazy">
+                <span class="match-badge"></span>
+            </div>
+            <div class="product-details">
+                <p class="brand-name"></p>
+                <h4 class="product-name"></h4>
+                <div class="price-row">
+                    <span class="price"></span>
+                </div>
+            </div>
+        </a>
+    </template>
+
+    <script src="/app.js"></script>
+</body>
+</html>

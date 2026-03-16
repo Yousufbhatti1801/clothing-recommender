@@ -1,13 +1,17 @@
 """High-level Pinecone vector service: init, ensure index, upsert, query."""
 from __future__ import annotations
 
+import logging
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Iterable, Sequence
 
 from pinecone import Index, Pinecone
 
 from app.core.config import get_settings
+from app.core.retry import with_retry
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -35,23 +39,26 @@ class PineconeVectorService:
         existing = {idx["name"] for idx in self._client.list_indexes()}
         if index_name in existing:
             return
+        log.info("Pinecone index '%s' not found — creating…", index_name)
         # Default to cosine metric since embeddings are L2-normalised.
         self._client.create_index(
             name=index_name,
             dimension=512,
             metric="cosine",
         )
+        log.info("Pinecone index '%s' created.", index_name)
 
+    @with_retry(max_attempts=3, backoff=0.5)
     def upsert(self, vectors: Sequence[dict]) -> None:
         """
-        Upsert embeddings.
+        Upsert embeddings with automatic retry on transient errors.
 
-        Each dict should contain: {"id": str, "values": list[float], "metadata": dict, "namespace": str}.
-        Namespaces allow per-category partitioning (e.g., "shirt", "pants", "shoes").
+        Each dict should contain:
+        ``{"id": str, "values": list[float], "metadata": dict, "namespace": str}``.
         """
         if not vectors:
             return
-        # Group by namespace so we minimise API calls.
+        # Group by namespace to minimise API calls.
         by_namespace: dict[str, list[dict]] = {}
         for vec in vectors:
             namespace = vec.get("namespace") or "default"
@@ -60,6 +67,7 @@ class PineconeVectorService:
         for namespace, payloads in by_namespace.items():
             self._index.upsert(vectors=payloads, namespace=namespace)
 
+    @with_retry(max_attempts=3, backoff=0.5)
     def query(
         self,
         values: Iterable[float],
@@ -69,7 +77,7 @@ class PineconeVectorService:
         filter: dict | None = None,
     ) -> list[VectorResult]:
         """
-        Return the top-k most similar embeddings from Pinecone.
+        Return the top-k most similar embeddings from Pinecone (with retry).
 
         Args:
             filter: Optional Pinecone metadata filter, e.g.
@@ -85,19 +93,17 @@ class PineconeVectorService:
             query_kwargs["filter"] = filter
         response = self._index.query(**query_kwargs)
         matches = response.get("matches", [])
-        results: list[VectorResult] = []
-        for match in matches[:top_k]:
-            results.append(
-                VectorResult(
-                    id=match.get("id"),
-                    score=float(match.get("score", 0.0)),
-                    metadata=match.get("metadata", {}) if with_metadata else {},
-                )
+        return [
+            VectorResult(
+                id=match.get("id"),
+                score=float(match.get("score", 0.0)),
+                metadata=match.get("metadata", {}) if with_metadata else {},
             )
-        return results
+            for match in matches[:top_k]
+        ]
 
 
 @lru_cache(maxsize=1)
-def get_vector_service() -> "PineconeVectorService":
+def get_vector_service() -> PineconeVectorService:
     """Return the process-wide singleton PineconeVectorService."""
     return PineconeVectorService()

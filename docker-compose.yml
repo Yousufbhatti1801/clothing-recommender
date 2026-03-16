@@ -13,6 +13,9 @@ services:
     volumes:
       - ./ml/models:/app/ml/models  # mount local model weights
     restart: unless-stopped
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
 
   db:
     image: postgres:16-alpine

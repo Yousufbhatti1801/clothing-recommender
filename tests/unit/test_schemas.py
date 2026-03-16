@@ -1,5 +1,4 @@
 """Unit tests for Pydantic schemas and enums."""
-import uuid
 
 import pytest
 from pydantic import ValidationError
@@ -9,19 +8,11 @@ from app.models.schemas import (
     ClothingDetectionResponse,
     DetectedGarment,
     GarmentCategory,
-    GarmentRecommendations,
     HealthResponse,
-    PipelineCategoryResult,
-    PipelineMatch,
-    PipelineRecommendationResponse,
     ProductIngestRequest,
-    ProductResponse,
     RecommendationRequest,
-    RecommendationResponse,
-    SellerResponse,
     VectorMatch,
 )
-
 
 # ── GarmentCategory ─────────────────────────────────────────────────────────
 

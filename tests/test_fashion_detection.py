@@ -15,13 +15,10 @@ Uses both mocked detectors (for deterministic tests) and the real model
 from __future__ import annotations
 
 import os
-import uuid
-from io import BytesIO
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import numpy as np
 import pytest
-import pytest_asyncio
 from PIL import Image
 
 os.environ.setdefault("PINECONE_API_KEY", "dummy")
@@ -31,8 +28,7 @@ from app.models.schemas import (
     DetectedGarment,
     GarmentCategory,
 )
-from ml.fashion_classes import APP_CLASS_NAMES, build_label_map_from_model_names
-
+from ml.fashion_classes import APP_CLASS_NAMES
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Helpers
@@ -258,8 +254,8 @@ class TestDetectionServiceIntegration:
 
     async def test_tiny_boxes_filtered(self, detection_service_with_mock):
         """Detection service should filter boxes < 1% of image area."""
-        from ml.yolo_detector import YOLODetector
         from app.services.detection import DetectionService
+        from ml.yolo_detector import YOLODetector
 
         mock_det = MagicMock(spec=YOLODetector)
         tiny = _make_garment(GarmentCategory.SHOES, 0, 0, 5, 5, 0.9)  # tiny
@@ -285,11 +281,11 @@ class TestPipelineIntegration:
         """Set up DetectAndEmbedPipeline with mocked YOLO + CLIP."""
         import warnings
         warnings.filterwarnings("ignore")
-        from ml.yolo_detector import YOLODetector
-        from ml.clip_encoder import CLIPEncoder
+        from app.services.detect_and_embed import DetectAndEmbedPipeline
         from app.services.detection import DetectionService
         from app.services.embedding import EmbeddingService
-        from app.services.detect_and_embed import DetectAndEmbedPipeline
+        from ml.clip_encoder import CLIPEncoder
+        from ml.yolo_detector import YOLODetector
 
         # Mock YOLO
         mock_det = MagicMock(spec=YOLODetector)
@@ -349,11 +345,11 @@ class TestPipelineIntegration:
 
     async def test_pipeline_empty_image(self, mock_pipeline):
         """Pipeline should handle images with no detections gracefully."""
-        from ml.yolo_detector import YOLODetector
-        from ml.clip_encoder import CLIPEncoder
+        from app.services.detect_and_embed import DetectAndEmbedPipeline
         from app.services.detection import DetectionService
         from app.services.embedding import EmbeddingService
-        from app.services.detect_and_embed import DetectAndEmbedPipeline
+        from ml.clip_encoder import CLIPEncoder
+        from ml.yolo_detector import YOLODetector
 
         mock_det = MagicMock(spec=YOLODetector)
         mock_det.detect_async = AsyncMock(return_value=[])

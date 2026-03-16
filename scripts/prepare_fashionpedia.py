@@ -35,9 +35,7 @@ import argparse
 import io
 import shutil
 import sys
-import tempfile
 from pathlib import Path
-from typing import Optional
 
 import pyarrow.parquet as pq
 import requests
@@ -140,7 +138,7 @@ def _determine_bbox_format(table) -> str:
         img_w    = row.get("width",  640)
         img_h    = row.get("height", 640)
 
-        for bbox, area in zip(bboxes, areas):
+        for bbox, area in zip(bboxes, areas, strict=False):
             if len(bbox) != 4 or area <= 0:
                 continue
             x0, y0, x1, y1 = bbox
@@ -169,7 +167,7 @@ def _determine_bbox_format(table) -> str:
     return fmt
 
 
-def _bbox_to_yolo(bbox: list[float], img_w: int, img_h: int, fmt: str) -> Optional[list[float]]:
+def _bbox_to_yolo(bbox: list[float], img_w: int, img_h: int, fmt: str) -> list[float] | None:
     """
     Convert a bbox to YOLO (cx, cy, w, h) all normalised to [0, 1].
     Returns None if the box is degenerate.
@@ -201,8 +199,8 @@ def process_parquet(
     out_img_dir: Path,
     out_lbl_dir: Path,
     split: str,
-    max_images: Optional[int] = None,
-    bbox_fmt: Optional[str] = None,
+    max_images: int | None = None,
+    bbox_fmt: str | None = None,
 ) -> tuple[dict[str, int], int]:
     """
     Read one parquet shard and write YOLO-format images + labels.
@@ -259,7 +257,7 @@ def process_parquet(
         raw_cats     = objs.get("category", [])
         yolo_lines   : list[str] = []
 
-        for bbox, src_cat in zip(raw_bboxes, raw_cats):
+        for bbox, src_cat in zip(raw_bboxes, raw_cats, strict=False):
             app_idx = FASHIONPEDIA_TO_APP.get(int(src_cat), -1)
             if app_idx < 0:
                 continue  # discard accessories / fine-grained attributes
@@ -405,7 +403,7 @@ def print_dataset_summary(out_root: Path) -> None:
                 bar = "█" * min(30, cnt // max(1, total // 30))
                 print(f"      {cls:12s} {cnt:6d}  {bar}")
 
-    print(f"\n  Total class distribution:")
+    print("\n  Total class distribution:")
     grand_total = sum(total_counts.values())
     for cls, cnt in sorted(total_counts.items(), key=lambda x: -x[1]):
         if cnt:
@@ -466,7 +464,7 @@ def main() -> None:
     print("="*60)
     print(f"  Output root  : {out_root}")
     print(f"  Train shards : {n_shards} (~{n_shards * 5700} raw images)")
-    print(f"  Val shard    : 1 (~1 158 images)")
+    print("  Val shard    : 1 (~1 158 images)")
     print(f"  Cache dir    : {cache_dir}")
 
     # ── Clear existing synthetic dataset ──────────────────────────────────────
@@ -493,7 +491,7 @@ def main() -> None:
     if val_parquet.exists() and val_parquet.stat().st_size > 1_000_000:
         print(f"  [cache] val shard: {val_parquet.name} ({val_parquet.stat().st_size/1e6:.0f} MB)")
     else:
-        print(f"\n  Downloading val shard (~85 MB) …")
+        print("\n  Downloading val shard (~85 MB) …")
         download_file(VAL_SHARD_URL, val_parquet, desc="val shard")
 
     # ── Process shards → YOLO format ─────────────────────────────────────────

@@ -73,11 +73,10 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from ml.fashion_classes import (
-    DEEPFASHION2_CLASSES,
     APP_CLASS_NAMES,
+    DEEPFASHION2_CLASSES,
     name_to_category,
 )
-from app.models.schemas import GarmentCategory
 
 # ── DeepFashion2 category_id (1-indexed) → app class index (0-indexed) ───────
 # DEEPFASHION2_CLASSES is keyed 0-12; DF2 JSON uses 1-13.

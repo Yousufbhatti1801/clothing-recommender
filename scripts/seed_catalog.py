@@ -146,7 +146,6 @@ async def _download_image(url: str, timeout: float = 10.0):
 
 def _embed_batch(images, encoder):
     """Synchronous CLIP encode for a batch of PIL images."""
-    import numpy as np
 
     return encoder.encode(images)
 
@@ -275,7 +274,7 @@ async def _seed(args) -> None:
 
         # ── 3. Write to DB + Pinecone ──────────────────────────────────
         async with AsyncSessionLocal() as session:
-            for item, vector in zip(meta_rows, vectors):
+            for item, vector in zip(meta_rows, vectors, strict=False):
                 # Idempotency: skip if product with same name already exists
                 existing = await session.execute(
                     select(Product).where(Product.name == item["name"])

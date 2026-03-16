@@ -1,6 +1,8 @@
 """RecommendationService: orchestrates the full AI pipeline."""
 from __future__ import annotations
 
+import logging
+
 from PIL import Image
 
 from app.core.config import get_settings
@@ -17,6 +19,8 @@ from app.services.detection import DetectionService
 from app.services.embedding import EmbeddingService
 from app.services.search import SearchService
 from app.utils.geo import compute_locality_boost
+
+log = logging.getLogger(__name__)
 
 
 class RecommendationService:
@@ -42,13 +46,14 @@ class RecommendationService:
         Full pipeline:
           1. Detect garments
           2. Crop + embed each garment
-          3. Search Pinecone per category
+          3. Search Pinecone per category (concurrently)
           4. Fetch product metadata from PostgreSQL
           5. Filter by budget, boost local sellers, rank
         """
         # ── Stage 1 & 2: detect + crop ────────────────────────────────────
         detected_pairs = await self._detection.detect_and_crop(image)
         if not detected_pairs:
+            log.info("No garments detected in uploaded image.")
             return RecommendationResponse(
                 results=[], detected_items=[], total_matches=0
             )
@@ -58,11 +63,12 @@ class RecommendationService:
         crops = [c for _, c in detected_pairs]
         embeddings = await self._embedding.embed(crops)
 
-        # ── Stage 4: vector search (per garment, pre-filtered by budget) ────────
-        search_pairs = [(emb, g.category) for emb, g in zip(embeddings, garments)]
+        # ── Stage 4: vector search (concurrent, per garment, pre-filtered) ─
+        search_pairs = [(emb, g.category) for emb, g in zip(embeddings, garments, strict=False)]
         matches = await self._search.search_many(
             search_pairs, max_price=request.budget
         )
+        log.info("Pinecone returned %d matches across %d garments.", len(matches), len(garments))
 
         # Group matches by category
         by_category: dict[GarmentCategory, list] = {}
@@ -141,7 +147,10 @@ class RecommendationService:
 
     @staticmethod
     def _filter_by_budget(
-        products: list[ProductResponse], budget: float
+        products: list[ProductResponse], budget: float | None
     ) -> list[ProductResponse]:
-        """Return only products whose price is within the user's budget."""
+        """Return only products whose price is within the user's budget.
+        If budget is None, all products are returned."""
+        if budget is None:
+            return products
         return [product for product in products if product.price <= budget]

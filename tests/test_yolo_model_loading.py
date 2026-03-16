@@ -16,12 +16,10 @@ from PIL import Image
 from app.models.schemas import GarmentCategory
 from ml.fashion_classes import (
     APP_CLASS_NAMES,
-    APP_NAME_TO_CATEGORY,
     build_label_map_from_model_names,
     is_fashion_model,
     name_to_category,
 )
-
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Fixtures

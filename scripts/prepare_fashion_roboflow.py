@@ -58,8 +58,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from ml.fashion_classes import APP_CLASS_NAMES, name_to_category
 from app.models.schemas import GarmentCategory
+from ml.fashion_classes import APP_CLASS_NAMES, name_to_category
 
 # ── Registry of known public fashion datasets ────────────────────────────────
 
@@ -258,7 +258,6 @@ def main() -> None:
             "  Run: pip install roboflow"
         )
 
-    import yaml  # should be available via ultralytics
 
     out_root: Path = args.out_root.resolve()
     raw_dir  = ROOT / "data" / "_roboflow_raw"

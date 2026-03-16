@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from PIL import Image
 
-from app.models.schemas import ClothingDetectionResponse, DetectedGarment, GarmentCategory
-from ml.yolo_detector import TARGET_CATEGORIES, YOLODetector, get_yolo_detector
+from app.models.schemas import ClothingDetectionResponse, DetectedGarment
+from ml.yolo_detector import YOLODetector, get_yolo_detector
 
 
 class DetectionService:

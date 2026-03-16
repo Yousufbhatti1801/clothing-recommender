@@ -8,8 +8,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import numpy as np
 import pytest
 import pytest_asyncio
-from PIL import Image
 from httpx import ASGITransport, AsyncClient
+from PIL import Image
 
 from app.models.schemas import (
     BoundingBox,
@@ -22,7 +22,6 @@ from app.models.schemas import (
     ProductResponse,
     RecommendationResponse,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  Shared helpers
@@ -152,6 +151,7 @@ async def client():
         patch("app.services.detect_and_embed.get_clip_encoder", return_value=mock_clip),
         patch("app.core.pinecone_client.init_pinecone"),
         patch("app.core.pinecone_client.get_pinecone_index", return_value=mock_index),
+        patch("app.api.routes.health.AsyncSessionLocal"),
         patch("app.core.database.engine") as mock_engine,
     ):
         # Mock the async DB engine so lifespan doesn't attempt a real connection
@@ -163,9 +163,8 @@ async def client():
         mock_engine.begin.return_value = begin_cm
         mock_engine.dispose = AsyncMock()
 
-        from app.main import create_app
         from app.core.dependencies import get_recommendation_service
-        import app.api.routes.pipeline as pipeline_module
+        from app.main import create_app
 
         app = create_app()
 
@@ -173,7 +172,7 @@ async def client():
         app.dependency_overrides[get_recommendation_service] = lambda: recommendation_service
 
         # Replace the module-level pipeline singleton with our stub
-        pipeline_module._pipeline = pipeline_stub
+        app.state.pipeline = pipeline_stub
 
         transport = ASGITransport(app=app)
         http_client = AsyncClient(transport=transport, base_url="http://test")

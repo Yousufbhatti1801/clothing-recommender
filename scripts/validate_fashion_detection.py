@@ -27,17 +27,18 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 import os
+
 os.environ.setdefault("PINECONE_API_KEY", "dummy")
 
 import warnings
+
 warnings.filterwarnings("ignore")
 
 from PIL import Image, ImageDraw, ImageFont
-import numpy as np
 
-from ml.yolo_detector import YOLODetector, ALL_FASHION_CATEGORIES, TARGET_CATEGORIES
-from ml.fashion_classes import APP_CLASS_NAMES, build_label_map_from_model_names, is_fashion_model
 from app.models.schemas import GarmentCategory
+from ml.fashion_classes import build_label_map_from_model_names, is_fashion_model
+from ml.yolo_detector import YOLODetector
 
 # ── Colours per category ──────────────────────────────────────────────────────
 COLOURS: dict[GarmentCategory, str] = {
@@ -122,7 +123,7 @@ def main() -> None:
     print(f"  Is fashion model  : {summary['is_fashion_model']}")
     print(f"  Number of classes : {summary['num_classes']}")
     print(f"  Confidence thresh : {summary['confidence_threshold']}")
-    print(f"  Class names       :")
+    print("  Class names       :")
     for idx, name in sorted(summary['class_names'].items(), key=lambda x: int(x[0])):
         cat = detector._label_map.get(int(idx), GarmentCategory.OTHER)
         print(f"    {idx:>3}: {name:<12} → {cat.value}")
@@ -216,11 +217,11 @@ def main() -> None:
         print(f"  ⚠ Missing target categories: {[c.value for c in missing]}")
         print("    (Expected with only 3 epochs of synthetic training)")
     else:
-        print(f"  ✓ All target categories (shirt, pants, shoes) detected!")
+        print("  ✓ All target categories (shirt, pants, shoes) detected!")
 
     print(f"\n  Pipeline status: {'✓ WORKING' if summary['is_fashion_model'] else '✗ NOT READY'}")
-    print(f"  Note: For real accuracy, train on DeepFashion2 or Roboflow dataset")
-    print(f"        with 100+ epochs.\n")
+    print("  Note: For real accuracy, train on DeepFashion2 or Roboflow dataset")
+    print("        with 100+ epochs.\n")
 
 
 if __name__ == "__main__":

@@ -1,16 +1,17 @@
 """POST /pipeline/recommend — full detect → embed → search pipeline in one call."""
-from __future__ import annotations
 
-from fastapi import APIRouter, File, Form, UploadFile
+import logging
 
+from fastapi import APIRouter, File, Form, Request, UploadFile
+
+from app.core.rate_limit import limiter
 from app.models.schemas import PipelineRecommendationResponse
 from app.services.recommendation_pipeline import RecommendationPipeline
 from app.utils.image import load_image_from_upload
 
-router = APIRouter(prefix="/pipeline", tags=["Pipeline"])
+log = logging.getLogger(__name__)
 
-# Module-level singleton — models are loaded once and shared across requests.
-_pipeline = RecommendationPipeline()
+router = APIRouter(prefix="/pipeline", tags=["Pipeline"])
 
 
 @router.post(
@@ -27,14 +28,18 @@ _pipeline = RecommendationPipeline()
         "Supports JPEG, PNG, and WebP; maximum file size 10 MB."
     ),
 )
+@limiter.limit("20/minute")
 async def recommend(
+    request: Request,
     file: UploadFile = File(..., description="Photo of a person wearing clothes"),
     budget: float | None = Form(
         None,
         gt=0,
-        description="Maximum price per item in USD.  "
+        description="Maximum price per item in USD. "
                     "When set, Pinecone server-side filtering removes over-budget results.",
     ),
 ) -> PipelineRecommendationResponse:
+    # Pipeline is initialised in the lifespan hook and stored on app.state
+    pipeline: RecommendationPipeline = request.app.state.pipeline
     image = await load_image_from_upload(file)
-    return await _pipeline.run(image, budget=budget)
+    return await pipeline.run(image, budget=budget)

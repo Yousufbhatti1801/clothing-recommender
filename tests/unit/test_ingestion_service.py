@@ -1,5 +1,4 @@
 """Unit tests for IngestionService — mocked catalog, embedding, Pinecone, HTTP."""
-import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import numpy as np

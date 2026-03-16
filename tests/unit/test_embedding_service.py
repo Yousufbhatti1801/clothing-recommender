@@ -1,5 +1,4 @@
 """Unit tests for EmbeddingService — mocked CLIP encoder."""
-from unittest.mock import AsyncMock, MagicMock
 
 import numpy as np
 import pytest

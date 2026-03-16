@@ -1,5 +1,4 @@
 """Unit tests for image loading and preprocessing utilities."""
-from io import BytesIO
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -13,7 +12,6 @@ from app.utils.image import (
     load_image_from_upload,
     resize_image,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  resize_image

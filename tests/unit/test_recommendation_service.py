@@ -7,15 +7,11 @@ import pytest
 from PIL import Image
 
 from app.models.schemas import (
-    BoundingBox,
-    DetectedGarment,
     GarmentCategory,
     RecommendationRequest,
-    VectorMatch,
 )
 from app.services.recommendation import RecommendationService
 from tests.conftest import make_garment, make_mock_product, make_mock_seller, make_vector_match
-
 
 PRODUCT_ID = "00000000-0000-0000-0000-000000000001"
 

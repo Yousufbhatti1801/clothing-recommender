@@ -13,11 +13,10 @@ from __future__ import annotations
 
 import uuid
 from io import BytesIO
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import numpy as np
 import pytest
-import pytest_asyncio
 from PIL import Image
 
 from app.models.schemas import (
@@ -26,7 +25,6 @@ from app.models.schemas import (
     GarmentCategory,
     VectorMatch,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  Async backend

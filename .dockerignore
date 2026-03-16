@@ -1,0 +1,42 @@
+# Python bytecode and caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Git
+.git/
+.gitignore
+
+# Local environment variables (NEVER bake secrets into image)
+.env
+.env.*
+!.env.example
+
+# Uploads and model training artefacts
+uploads/
+ml/runs/
+ml/train_log.txt
+
+# Test suite and code analysis
+tests/
+.pytest_cache/
+.deepeval/
+
+# IDE and OS
+.vscode/
+.idea/
+*.DS_Store
+
+# Jupyter
+*.ipynb
+.ipynb_checkpoints/
+
+# CI artifacts
+*.log

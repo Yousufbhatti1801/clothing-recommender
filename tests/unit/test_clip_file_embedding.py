@@ -1,6 +1,4 @@
 """Unit tests for ClipFileEmbeddingService — mocked CLIP encoder."""
-import tempfile
-from pathlib import Path
 from unittest.mock import MagicMock
 
 import numpy as np

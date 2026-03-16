@@ -102,7 +102,7 @@ class DetectAndEmbedPipeline:
 
         # ── Step 4: assemble into GarmentEmbedding and group by category ────
         result = PipelineResult()
-        for garment, crop, vector in zip(garments, crops, vectors):
+        for garment, crop, vector in zip(garments, crops, vectors, strict=False):
             ge = GarmentEmbedding(garment=garment, crop=crop, embedding=vector)
             if garment.category == GarmentCategory.SHIRT:
                 result.shirts.append(ge)

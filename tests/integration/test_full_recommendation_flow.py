@@ -47,8 +47,6 @@ from httpx import ASGITransport, AsyncClient
 from PIL import Image
 
 from app.models.schemas import (
-    BoundingBox,
-    DetectedGarment,
     GarmentCategory,
     GarmentRecommendations,
     RecommendationRequest,
@@ -61,32 +59,25 @@ from app.services.embedding import EmbeddingService
 from app.services.recommendation import RecommendationService
 from app.services.recommendation_pipeline import RecommendationPipeline
 from app.services.search import SearchService
-from tests.conftest import make_garment, make_mock_product, make_mock_seller
+from tests.conftest import make_garment, make_mock_product
 from tests.fixtures.images import (
     make_corrupt_jpeg,
     make_jpeg,
-    make_outfit_jpeg,
     make_oversized_jpeg,
     make_pdf_bytes,
     make_png,
     make_webp,
 )
 from tests.integration.conftest import (
-    EXPENSIVE_ID,
-    PANTS_A_ID,
     PINECONE_MATCHES,
-    REMOTE_LAT,
-    REMOTE_LON,
     SHIRT_A_ID,
     SHIRT_B_ID,
-    SHOES_A_ID,
     USER_LAT,
     USER_LON,
     build_clip_mock,
     build_pinecone_index_mock,
     build_yolo_mock,
 )
-
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Internal helpers
@@ -179,6 +170,7 @@ async def wired_client(catalog_map):
         patch("app.services.detect_and_embed.get_clip_encoder", return_value=clip),
         patch("app.core.pinecone_client.init_pinecone"),
         patch("app.core.pinecone_client.get_pinecone_index", return_value=index),
+        patch("app.api.routes.health.AsyncSessionLocal"),
         patch("app.core.database.engine") as mock_engine,
     ):
         # Prevent lifespan from touching a real database
@@ -192,7 +184,6 @@ async def wired_client(catalog_map):
 
         from app.core.dependencies import get_recommendation_service
         from app.main import create_app
-        import app.api.routes.pipeline as pipeline_module
 
         app = create_app()
         app.dependency_overrides[get_recommendation_service] = _override_recommend_service
@@ -202,7 +193,7 @@ async def wired_client(catalog_map):
             detection_service=DetectionService(detector=yolo),
             embedding_service=EmbeddingService(encoder=clip),
         )
-        pipeline_module._pipeline = RecommendationPipeline(
+        app.state.pipeline = RecommendationPipeline(
             detect_embed=detect_embed_pipeline,
             vector_store=MagicMock(query=MagicMock(return_value=[])),
         )

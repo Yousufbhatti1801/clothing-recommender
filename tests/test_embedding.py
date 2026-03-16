@@ -1,7 +1,8 @@
+from unittest.mock import AsyncMock, MagicMock
+
 import numpy as np
 import pytest
 from PIL import Image
-from unittest.mock import AsyncMock, MagicMock
 
 from app.services.embedding import EmbeddingService
 

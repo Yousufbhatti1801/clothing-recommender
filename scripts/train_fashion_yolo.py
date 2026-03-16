@@ -188,7 +188,7 @@ def main() -> None:
 
     device = args.device or detect_device()
     print(f"\n{'='*60}")
-    print(f"  Fashion YOLOv8 Fine-tuning")
+    print("  Fashion YOLOv8 Fine-tuning")
     print(f"{'='*60}")
     print(f"  Base model : {args.model}")
     print(f"  Dataset    : {args.data}")
@@ -230,7 +230,7 @@ def main() -> None:
         model = YOLO(args.model)
 
     # ── Train ─────────────────────────────────────────────────────────────────
-    print(f"\nStarting training … (this will take a while)\n")
+    print("\nStarting training … (this will take a while)\n")
     t0 = time.perf_counter()
 
     results = model.train(
@@ -285,9 +285,9 @@ def main() -> None:
     except Exception as exc:
         print(f"  (could not compute metrics: {exc})")
 
-    print(f"\nNext step: restart the application to load the new model.")
-    print(f"  The detector will auto-detect fashion classes from model.names.")
-    print(f"  Run: uvicorn app:app --reload")
+    print("\nNext step: restart the application to load the new model.")
+    print("  The detector will auto-detect fashion classes from model.names.")
+    print("  Run: uvicorn app:app --reload")
 
 
 if __name__ == "__main__":

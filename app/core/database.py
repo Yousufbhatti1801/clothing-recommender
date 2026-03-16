@@ -11,6 +11,8 @@ engine = create_async_engine(
     pool_pre_ping=True,
     pool_size=10,
     max_overflow=20,
+    pool_timeout=30,    # raise after 30s waiting for a connection (vs. blocking forever)
+    pool_recycle=1800,  # recycle connections every 30 min to avoid stale PostgreSQL connections
 )
 
 AsyncSessionLocal = async_sessionmaker(

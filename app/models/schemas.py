@@ -3,7 +3,6 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field, HttpUrl
 
-
 # ── Enums ─────────────────────────────────────────────────────────────────────
 
 class GarmentCategory(StrEnum):
@@ -188,4 +187,7 @@ class HealthResponse(BaseModel):
     status: str
     database: str
     pinecone: str
+    clip_model_loaded: bool = True
+    yolo_model_loaded: bool = True
+    uptime_seconds: float = 0.0
     version: str = "1.0.0"

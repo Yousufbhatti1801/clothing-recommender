@@ -24,12 +24,13 @@ sys.path.insert(0, str(ROOT))
 os.environ.setdefault("PINECONE_API_KEY", "dummy")
 
 import warnings
+
 warnings.filterwarnings("ignore")
 
 from PIL import Image, ImageDraw, ImageFont
 
-from ml.yolo_detector import TARGET_CATEGORIES, ALL_FASHION_CATEGORIES, YOLODetector
 from app.models.schemas import GarmentCategory
+from ml.yolo_detector import TARGET_CATEGORIES, YOLODetector
 
 # ── colour palette per category ──────────────────────────────────────────────
 COLOURS: dict[GarmentCategory, str] = {
@@ -115,7 +116,7 @@ def report_image(image_path: Path, detector: YOLODetector) -> None:
         d for d in all_dets
         if d.category in TARGET_CATEGORIES and area_pct(d, img_w, img_h) >= 1.0
     ]
-    print(f"\n  ┌─ TARGET detections filtered (shirt/pants/shoes, area ≥ 1 %) ─")
+    print("\n  ┌─ TARGET detections filtered (shirt/pants/shoes, area ≥ 1 %) ─")
     if target_dets:
         for det in target_dets:
             bb  = det.bounding_box
@@ -132,7 +133,7 @@ def report_image(image_path: Path, detector: YOLODetector) -> None:
     for d in all_dets:
         by_cat[d.category] = by_cat.get(d.category, 0) + 1
     if by_cat:
-        print(f"\n  Category summary: " + ", ".join(
+        print("\n  Category summary: " + ", ".join(
             f"{cat.value}×{n}" for cat, n in sorted(by_cat.items(), key=lambda x: x[0])
         ))
 
@@ -146,7 +147,7 @@ def report_image(image_path: Path, detector: YOLODetector) -> None:
         annotated.save(annotated_path, format="JPEG", quality=95)
         print(f"\n  Annotated image saved → {annotated_path.relative_to(ROOT)}")
     else:
-        print(f"\n  No annotations drawn (no detections).")
+        print("\n  No annotations drawn (no detections).")
 
 
 def main() -> None:
@@ -161,22 +162,22 @@ def main() -> None:
         print("No images found in uploads/. Upload .jpg / .png / .webp files first.")
         return
 
-    print(f"\nLoading YOLOv8 model …")
+    print("\nLoading YOLOv8 model …")
     detector = YOLODetector()
     summary = detector.model_summary()
     print(f"Model loaded.  Confidence threshold = {detector.confidence_threshold}")
 
     # ── Model diagnostics ─────────────────────────────────────────────────
-    print(f"\n┌─ MODEL DIAGNOSTICS ─────────────────────────────────────────")
+    print("\n┌─ MODEL DIAGNOSTICS ─────────────────────────────────────────")
     print(f"│  Model path       : {summary['model_path']}")
     print(f"│  Is fashion model : {'✓ YES' if summary['is_fashion_model'] else '✗ NO (COCO)'}")
     print(f"│  Number of classes: {summary['num_classes']}")
-    print(f"│  Class names      :")
+    print("│  Class names      :")
     for idx, name in sorted(summary['class_names'].items(), key=lambda x: int(x[0])):
         cat = detector._label_map.get(int(idx), GarmentCategory.OTHER)
         print(f"│    {idx:>3}: {name:<12} → {cat.value}")
     print(f"│  Target cats      : {[c.value for c in TARGET_CATEGORIES]}")
-    print(f"└────────────────────────────────────────────────────────────────")
+    print("└────────────────────────────────────────────────────────────────")
 
     print(f"\nImages found  : {[p.name for p in images]}")
 

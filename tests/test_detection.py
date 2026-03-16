@@ -1,7 +1,7 @@
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 from PIL import Image
-import numpy as np
 
 from app.models.schemas import BoundingBox, DetectedGarment, GarmentCategory
 from app.services.detection import DetectionService

@@ -5,14 +5,11 @@ import pytest
 from PIL import Image
 
 from app.models.schemas import (
-    BoundingBox,
     ClothingDetectionResponse,
     DetectedGarment,
     GarmentCategory,
 )
 from app.services.detection import DetectionService
-from tests.conftest import make_garment
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  detect()

@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from app.services.vector_store import PineconeVectorService, VectorResult
+from app.services.vector_store import PineconeVectorService
 
 
 @pytest.fixture

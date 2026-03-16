@@ -3,14 +3,12 @@ from unittest.mock import AsyncMock, MagicMock
 
 import numpy as np
 import pytest
-from PIL import Image
 
 from app.models.schemas import GarmentCategory
-from app.services.detect_and_embed import DetectAndEmbedPipeline, PipelineResult
+from app.services.detect_and_embed import DetectAndEmbedPipeline
 from app.services.detection import DetectionService
 from app.services.embedding import EmbeddingService
 from app.services.recommendation_pipeline import RecommendationPipeline
-from app.services.search import SearchService
 from app.services.vector_store import VectorResult
 from tests.conftest import make_garment
 

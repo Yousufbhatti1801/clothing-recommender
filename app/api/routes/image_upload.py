@@ -1,5 +1,6 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
 from pathlib import Path
+
+from fastapi import APIRouter, File, HTTPException, UploadFile
 
 router = APIRouter(prefix="/upload", tags=["Image Upload"])
 

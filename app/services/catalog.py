@@ -1,6 +1,7 @@
 """CatalogService: fetches and stores product + seller data in PostgreSQL."""
 from __future__ import annotations
 
+import logging
 import uuid
 
 from sqlalchemy import select
@@ -9,6 +10,8 @@ from sqlalchemy.orm import selectinload
 
 from app.models.orm import Product, Seller
 from app.models.schemas import ProductIngestRequest
+
+log = logging.getLogger(__name__)
 
 
 class CatalogService:
@@ -55,7 +58,14 @@ class CatalogService:
         """Update the Pinecone vector_id for an existing product."""
         stmt = select(Product).where(Product.id == product_id)
         result = await self._db.execute(stmt)
-        product = result.scalar_one()
+        product = result.scalar_one_or_none()
+        if product is None:
+            log.error(
+                "set_vector_id: product %s not found; vector_id '%s' not stored.",
+                product_id,
+                vector_id,
+            )
+            raise ValueError(f"Product {product_id} not found when writing vector_id.")
         product.vector_id = vector_id
 
     async def get_seller(self, seller_id: uuid.UUID) -> Seller | None:

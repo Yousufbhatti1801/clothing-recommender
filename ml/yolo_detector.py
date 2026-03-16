@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from dataclasses import dataclass
 from functools import lru_cache
 
@@ -10,9 +11,12 @@ from PIL import Image
 from ultralytics import YOLO
 
 from app.core.config import get_settings
+from app.core.executors import get_ml_executor
 from app.models.schemas import BoundingBox, DetectedGarment, GarmentCategory
 from ml.fashion_classes import build_label_map_from_model_names
 from ml.fashion_classes import is_fashion_model as _is_fashion_model
+
+log = logging.getLogger(__name__)
 
 # ── Backward-compatible static LABEL_MAP (6-class legacy schema) ─────────────
 # This map is used as fallback when the model does not carry class names
@@ -187,9 +191,9 @@ class YOLODetector:
     # ── Async wrappers ────────────────────────────────────────────────────────
 
     async def detect_async(self, image: Image.Image) -> list[DetectedGarment]:
-        """Non-blocking wrapper — runs detect() in the default thread-pool."""
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, self.detect, image)
+        """Non-blocking wrapper — runs detect() in the dedicated ML thread-pool."""
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(get_ml_executor(), self.detect, image)
 
     async def detect_targets_async(
         self,
@@ -197,15 +201,15 @@ class YOLODetector:
         categories: frozenset[GarmentCategory] = TARGET_CATEGORIES,
     ) -> list[DetectedGarment]:
         """Non-blocking version of detect_targets."""
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, self.detect_targets, image, categories)
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(get_ml_executor(), self.detect_targets, image, categories)
 
     async def detect_all_fashion_async(
         self, image: Image.Image
     ) -> list[DetectedGarment]:
         """Non-blocking version of detect_all_fashion."""
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, self.detect_all_fashion, image)
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(get_ml_executor(), self.detect_all_fashion, image)
 
     # ── Diagnostics ───────────────────────────────────────────────────────────
 
@@ -268,7 +272,7 @@ class YOLODetector:
 
         try:
             font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", size=16)
-        except (OSError, IOError):
+        except OSError:
             font = ImageFont.load_default()
 
         for det in detections:
