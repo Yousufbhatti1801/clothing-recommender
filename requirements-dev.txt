@@ -1,0 +1,14 @@
+# Development-only dependencies (not needed at runtime).
+# Install alongside the main requirements:
+#   pip install -r requirements.txt -r requirements-dev.txt
+
+# Extended test utilities
+anyio[asyncio]==4.4.0       # required by pytest-anyio async backend
+httpx==0.27.2               # async test client for FastAPI (TestClient)
+
+# Code quality
+ruff==0.6.9                 # already in requirements.txt, kept here for clarity
+mypy==1.11.2                # optional static type checking
+
+# Documentation (optional)
+# mkdocs-material==9.5.0

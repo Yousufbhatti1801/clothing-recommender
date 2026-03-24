@@ -216,8 +216,8 @@ class DatasetValidator:
     def _load_yaml(self) -> tuple[dict, pathlib.Path, int, dict[int, str]]:
         try:
             import yaml
-        except ImportError:
-            raise ImportError("pyyaml is required: pip install pyyaml")
+        except ImportError as exc:
+            raise ImportError("pyyaml is required: pip install pyyaml") from exc
 
         if not self.config_path.exists():
             raise FileNotFoundError(
@@ -369,10 +369,9 @@ class DatasetValidator:
             if not line:
                 continue
             parts = line.split()
-            try:
+            import contextlib
+            with contextlib.suppress(ValueError, IndexError):
                 rows.append((int(parts[0]), [float(v) for v in parts[1:]]))
-            except (ValueError, IndexError):
-                pass
         return rows
 
     def _check_label_integrity(

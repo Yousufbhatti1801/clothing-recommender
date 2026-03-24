@@ -42,6 +42,7 @@ class Settings(BaseSettings):
 
     # Observability
     sentry_dsn: str | None = None
+    log_format: str = "text"  # "json" for production/cloud, "text" for development
 
     # Ingestion safety — comma-separated allowed image domains.
     # Leave empty in development to allow all hosts.

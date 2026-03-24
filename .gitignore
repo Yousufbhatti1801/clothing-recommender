@@ -5,6 +5,8 @@
 ml/models/
 ml/runs/
 .env
+.venv/
+venv/
 __pycache__/
 *.pyc
 .pytest_cache/

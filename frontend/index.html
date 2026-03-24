@@ -43,12 +43,37 @@
                     </div>
                 </div>
 
+                <!-- Filters -->
+                <div class="filters-panel">
+                    <div class="filter-group">
+                        <label class="filter-label" for="budget-input">Max budget (USD)</label>
+                        <input
+                            type="number"
+                            id="budget-input"
+                            class="filter-input"
+                            placeholder="No limit"
+                            min="1"
+                            step="1"
+                            aria-label="Maximum budget in USD"
+                        >
+                    </div>
+
+                    <details class="geo-toggle">
+                        <summary>📍 Prefer local sellers</summary>
+                        <div class="geo-inputs">
+                            <input type="number" id="lat-input" class="filter-input" placeholder="Latitude"  step="any" min="-90"  max="90"  aria-label="Latitude">
+                            <input type="number" id="lon-input" class="filter-input" placeholder="Longitude" step="any" min="-180" max="180" aria-label="Longitude">
+                            <button id="locate-btn" class="locate-btn" type="button">Use My Location</button>
+                        </div>
+                    </details>
+                </div>
+
                 <!-- Loading State -->
                 <div id="loading" class="loading-container hidden">
                     <div class="spinner"></div>
                     <p>Detecting garments and finding matches...</p>
                 </div>
-                
+
                 <!-- Error State -->
                 <div id="error-message" class="error-message hidden"></div>
             </section>
@@ -74,6 +99,21 @@
                 <div id="shoes-container" class="category-container hidden">
                     <h3>👟 Shoes Detected</h3>
                     <div class="product-grid" id="shoes-grid"></div>
+                </div>
+
+                <div id="jackets-container" class="category-container hidden">
+                    <h3>🧥 Jackets Detected</h3>
+                    <div class="product-grid" id="jackets-grid"></div>
+                </div>
+
+                <div id="dresses-container" class="category-container hidden">
+                    <h3>👗 Dresses Detected</h3>
+                    <div class="product-grid" id="dresses-grid"></div>
+                </div>
+
+                <div id="skirts-container" class="category-container hidden">
+                    <h3>🩱 Skirts Detected</h3>
+                    <div class="product-grid" id="skirts-grid"></div>
                 </div>
             </section>
         </main>

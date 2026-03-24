@@ -303,3 +303,108 @@ h1 {
     .product-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
     .product-details { padding: 1rem; }
 }
+
+/* ── Filters Panel ── */
+.filters-panel {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-top: 1.25rem;
+    padding: 1.25rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 1rem;
+    backdrop-filter: blur(8px);
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    min-width: 160px;
+}
+
+.filter-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+}
+
+.filter-input {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.9375rem;
+    padding: 0.5rem 0.75rem;
+    width: 100%;
+    transition: border-color 0.2s;
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+
+.filter-input::-webkit-inner-spin-button,
+.filter-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+.filter-input::placeholder { color: var(--text-muted); }
+
+.filter-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+}
+
+/* Geo section */
+.geo-toggle {
+    flex: 1;
+    min-width: 220px;
+}
+
+.geo-toggle > summary {
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0;
+    transition: color 0.2s;
+}
+
+.geo-toggle > summary:hover { color: var(--text-primary); }
+
+.geo-toggle > summary::-webkit-details-marker { display: none; }
+
+.geo-inputs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.geo-inputs .filter-input { flex: 1; min-width: 120px; }
+
+.locate-btn {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    border: none;
+    border-radius: 0.5rem;
+    color: #fff;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+}
+
+.locate-btn:hover  { opacity: 0.88; }
+.locate-btn:active { opacity: 0.75; }
+.locate-btn:disabled { opacity: 0.5; cursor: not-allowed; }

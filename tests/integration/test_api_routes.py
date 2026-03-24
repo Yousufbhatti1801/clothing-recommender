@@ -71,8 +71,12 @@ async def client():
     async def _detect_targets_async(img, cats=None):
         return mock_yolo.detect_targets(img)
 
+    async def _detect_all_fashion_async(img):
+        return mock_yolo.detect(img)
+
     mock_yolo.detect_async = _detect_async
     mock_yolo.detect_targets_async = _detect_targets_async
+    mock_yolo.detect_all_fashion_async = _detect_all_fashion_async
 
     # ── 2. Build mock CLIP ────────────────────────────────────────────────
     mock_clip = MagicMock()
@@ -99,7 +103,9 @@ async def client():
 
     # PineconeVectorService.__init__ calls Pinecone(...).list_indexes() and .Index(...)
     mock_pc_instance = MagicMock()
-    mock_pc_instance.list_indexes.return_value = [{"name": "clothing-embeddings"}]
+    pc_indexes_obj = MagicMock()
+    pc_indexes_obj.names.return_value = ["clothing-embeddings"]
+    mock_pc_instance.list_indexes.return_value = pc_indexes_obj
     mock_pc_instance.Index.return_value = mock_index
     mock_pc_class = MagicMock(return_value=mock_pc_instance)
 
@@ -238,7 +244,7 @@ class TestUploadRoute:
             files={"file": ("photo.jpg", _jpeg_bytes(), "image/jpeg")},
         )
         assert resp.status_code == 200
-        assert "file_path" in resp.json()
+        assert "filename" in resp.json()
 
 
 class TestRecommendationRoute:

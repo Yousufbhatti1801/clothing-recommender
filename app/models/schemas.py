@@ -72,7 +72,7 @@ class ProductResponse(BaseModel):
 # ── Detection Response ───────────────────────────────────────────────────────
 
 class ClothingDetectionResponse(BaseModel):
-    """Structured detection result with the three target clothing categories."""
+    """Structured detection result with all six clothing categories."""
 
     shirts: list[DetectedGarment] = Field(
         default_factory=list,
@@ -86,22 +86,43 @@ class ClothingDetectionResponse(BaseModel):
         default_factory=list,
         description="All footwear detections above the confidence threshold",
     )
+    jackets: list[DetectedGarment] = Field(
+        default_factory=list,
+        description="All jacket/coat detections above the confidence threshold",
+    )
+    dresses: list[DetectedGarment] = Field(
+        default_factory=list,
+        description="All dress detections above the confidence threshold",
+    )
+    skirts: list[DetectedGarment] = Field(
+        default_factory=list,
+        description="All skirt detections above the confidence threshold",
+    )
     total_detections: int = Field(
         0,
-        description="Total number of target garments found",
+        description="Total number of fashion garments found",
     )
 
     @classmethod
     def from_detections(cls, detections: list["DetectedGarment"]) -> "ClothingDetectionResponse":
         """Build a ClothingDetectionResponse from a flat list of DetectedGarment."""
-        shirts = [d for d in detections if d.category == GarmentCategory.SHIRT]
-        pants  = [d for d in detections if d.category == GarmentCategory.PANTS]
-        shoes  = [d for d in detections if d.category == GarmentCategory.SHOES]
+        shirts  = [d for d in detections if d.category == GarmentCategory.SHIRT]
+        pants   = [d for d in detections if d.category == GarmentCategory.PANTS]
+        shoes   = [d for d in detections if d.category == GarmentCategory.SHOES]
+        jackets = [d for d in detections if d.category == GarmentCategory.JACKET]
+        dresses = [d for d in detections if d.category == GarmentCategory.DRESS]
+        skirts  = [d for d in detections if d.category == GarmentCategory.SKIRT]
         return cls(
             shirts=shirts,
             pants=pants,
             shoes=shoes,
-            total_detections=len(shirts) + len(pants) + len(shoes),
+            jackets=jackets,
+            dresses=dresses,
+            skirts=skirts,
+            total_detections=(
+                len(shirts) + len(pants) + len(shoes)
+                + len(jackets) + len(dresses) + len(skirts)
+            ),
         )
 
 
@@ -145,6 +166,44 @@ class ProductIngestResponse(BaseModel):
     message: str = "Product indexed successfully"
 
 
+class ProductUpdateRequest(BaseModel):
+    """Fields that may be updated on an existing catalog product."""
+
+    name: str | None = None
+    brand: str | None = None
+    description: str | None = None
+    price: float | None = Field(None, gt=0)
+    currency: str | None = None
+    image_url: HttpUrl | None = None
+    product_url: HttpUrl | None = None
+    seller_id: uuid.UUID | None = None
+
+
+class BulkIngestResult(BaseModel):
+    """Per-item outcome from a bulk ingest request."""
+
+    index: int = Field(..., description="0-based position in the original request list")
+    success: bool
+    product_id: uuid.UUID | None = None
+    vector_id: str | None = None
+    error: str | None = None
+
+
+class ProductBulkIngestRequest(BaseModel):
+    """Batch product ingestion — up to 100 items per call."""
+
+    products: list[ProductIngestRequest] = Field(..., min_length=1, max_length=100)
+
+
+class ProductBulkIngestResponse(BaseModel):
+    """Aggregated result of a bulk ingest request."""
+
+    results: list[BulkIngestResult]
+    total: int
+    succeeded: int
+    failed: int
+
+
 # ── Pipeline recommendation ──────────────────────────────────────────────────
 
 class PipelineMatch(BaseModel):
@@ -177,6 +236,9 @@ class PipelineRecommendationResponse(BaseModel):
     shirts: list[PipelineCategoryResult] = Field(default_factory=list)
     pants: list[PipelineCategoryResult] = Field(default_factory=list)
     shoes: list[PipelineCategoryResult] = Field(default_factory=list)
+    jackets: list[PipelineCategoryResult] = Field(default_factory=list)
+    dresses: list[PipelineCategoryResult] = Field(default_factory=list)
+    skirts: list[PipelineCategoryResult] = Field(default_factory=list)
     total_detections: int
     total_matches: int
 

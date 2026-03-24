@@ -37,15 +37,24 @@ class PipelineResult:
     shirts: list[GarmentEmbedding] = field(default_factory=list)
     pants: list[GarmentEmbedding] = field(default_factory=list)
     shoes: list[GarmentEmbedding] = field(default_factory=list)
+    jackets: list[GarmentEmbedding] = field(default_factory=list)
+    dresses: list[GarmentEmbedding] = field(default_factory=list)
+    skirts: list[GarmentEmbedding] = field(default_factory=list)
 
     @property
     def all(self) -> list[GarmentEmbedding]:
         """Flat list of all detected garment embeddings."""
-        return self.shirts + self.pants + self.shoes
+        return (
+            self.shirts + self.pants + self.shoes
+            + self.jackets + self.dresses + self.skirts
+        )
 
     @property
     def total(self) -> int:
-        return len(self.shirts) + len(self.pants) + len(self.shoes)
+        return (
+            len(self.shirts) + len(self.pants) + len(self.shoes)
+            + len(self.jackets) + len(self.dresses) + len(self.skirts)
+        )
 
 
 class DetectAndEmbedPipeline:
@@ -110,5 +119,12 @@ class DetectAndEmbedPipeline:
                 result.pants.append(ge)
             elif garment.category == GarmentCategory.SHOES:
                 result.shoes.append(ge)
+            elif garment.category == GarmentCategory.JACKET:
+                result.jackets.append(ge)
+            elif garment.category == GarmentCategory.DRESS:
+                result.dresses.append(ge)
+            elif garment.category == GarmentCategory.SKIRT:
+                result.skirts.append(ge)
+            # GarmentCategory.OTHER is intentionally ignored
 
         return result

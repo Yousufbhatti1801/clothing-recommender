@@ -4,7 +4,14 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
-ignore = ["E501"]
+ignore = [
+    "E501",   # line-too-long (handled by formatter)
+    "B008",   # FastAPI Depends/File/Form/Query in argument defaults — intentional pattern
+]
+
+[tool.ruff.lint.per-file-ignores]
+"alembic/*"    = ["E402"]   # sys.path manipulation before app imports
+"scripts/*"    = ["E402", "F841", "B007"]  # utility scripts: path hacks + minor lint
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

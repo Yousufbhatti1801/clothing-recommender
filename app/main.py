@@ -37,7 +37,7 @@ async def lifespan(app: FastAPI):
     app.state.start_time = time.monotonic()
 
     settings = get_settings()
-    configure_logging(debug=settings.debug)
+    configure_logging(debug=settings.debug, fmt=settings.log_format)
 
     # ── Sentry (optional) ─────────────────────────────────────────────────
     if settings.sentry_dsn:

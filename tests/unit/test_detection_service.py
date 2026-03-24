@@ -65,7 +65,7 @@ class TestDetectClothing:
     async def test_filters_tiny_boxes(self, sample_image, tiny_garment):
         """Bounding boxes < 1 % of image area should be filtered out."""
         detector = MagicMock()
-        detector.detect_targets_async = AsyncMock(return_value=[tiny_garment])
+        detector.detect_all_fashion_async = AsyncMock(return_value=[tiny_garment])
         svc = DetectionService(detector=detector)
         resp = await svc.detect_clothing(sample_image)
         assert resp.total_detections == 0

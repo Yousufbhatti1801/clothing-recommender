@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import uuid
 from urllib.parse import urlparse
 
 from PIL import Image
@@ -67,6 +68,57 @@ class IngestionService:
         await self._catalog.set_vector_id(product.id, vector_id)
 
         return ProductIngestResponse(product_id=product.id, vector_id=vector_id)
+
+    async def ingest_bulk(
+        self, items: list[ProductIngestRequest]
+    ) -> list[ProductIngestResponse | Exception]:
+        """
+        Ingest multiple products sequentially.
+
+        Returns one entry per input item.  On per-item failure the entry is the
+        caught exception so callers can report partial success without aborting
+        the entire batch.
+        """
+        results: list[ProductIngestResponse | Exception] = []
+        for item in items:
+            try:
+                result = await self.ingest(item)
+                results.append(result)
+            except Exception as exc:
+                log.warning(
+                    "Bulk ingest: failed to ingest '%s': %s", item.name, exc
+                )
+                results.append(exc)
+        return results
+
+    async def delete_product(self, product_id: uuid.UUID) -> None:
+        """
+        Remove a product from Pinecone then PostgreSQL.
+
+        The Pinecone deletion is best-effort: a failure there is logged but
+        does not prevent the DB row from being removed.
+        """
+        product = await self._catalog.get_product_by_id(product_id)
+        if product is None:
+            raise ValueError(f"Product {product_id} not found.")
+        if product.vector_id:
+            try:
+                self._index.delete(
+                    ids=[product.vector_id],
+                    namespace=product.category,
+                )
+                log.info(
+                    "Deleted vector '%s' from Pinecone namespace='%s'.",
+                    product.vector_id,
+                    product.category,
+                )
+            except Exception as exc:
+                log.warning(
+                    "Could not delete vector '%s' from Pinecone (will still remove DB row): %s",
+                    product.vector_id,
+                    exc,
+                )
+        await self._catalog.delete_product(product_id)
 
     @staticmethod
     async def _download_image(url: str) -> Image.Image:

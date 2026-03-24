@@ -122,6 +122,7 @@ def mock_yolo_detector(all_garments):
     detector = MagicMock()
     detector.detect_async = AsyncMock(return_value=all_garments)
     detector.detect_targets_async = AsyncMock(return_value=all_garments)
+    detector.detect_all_fashion_async = AsyncMock(return_value=all_garments)
     return detector
 
 

@@ -23,6 +23,7 @@ env/
 uploads/
 ml/runs/
 ml/train_log.txt
+data/
 
 # Test suite and code analysis
 tests/

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import uuid
+from typing import TYPE_CHECKING
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,6 +11,9 @@ from sqlalchemy.orm import selectinload
 
 from app.models.orm import Product, Seller
 from app.models.schemas import ProductIngestRequest
+
+if TYPE_CHECKING:
+    from app.models.schemas import ProductUpdateRequest
 
 log = logging.getLogger(__name__)
 
@@ -72,3 +76,58 @@ class CatalogService:
         stmt = select(Seller).where(Seller.id == seller_id)
         result = await self._db.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def get_product_by_id(self, product_id: uuid.UUID) -> Product | None:
+        """Fetch a single product (with seller) by its UUID primary key."""
+        stmt = (
+            select(Product)
+            .where(Product.id == product_id)
+            .options(selectinload(Product.seller))
+        )
+        result = await self._db.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def update_product(
+        self, product_id: uuid.UUID, data: ProductUpdateRequest
+    ) -> Product:
+        """
+        Partially update mutable product fields.
+
+        Only non-None fields in *data* are written so a PATCH with a single
+        field does not wipe the rest.
+        """
+        product = await self.get_product_by_id(product_id)
+        if product is None:
+            raise ValueError(f"Product {product_id} not found.")
+        for field, value in data.model_dump(exclude_none=True).items():
+            # HttpUrl values must be stored as plain strings
+            if field in ("image_url", "product_url") and value is not None:
+                value = str(value)
+            setattr(product, field, value)
+        return product
+
+    async def delete_product(self, product_id: uuid.UUID) -> None:
+        """Remove a product row. Raises ValueError if not found."""
+        product = await self.get_product_by_id(product_id)
+        if product is None:
+            raise ValueError(f"Product {product_id} not found.")
+        await self._db.delete(product)
+
+    async def list_products(
+        self,
+        category: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[Product]:
+        """Return a paginated slice of catalog products, optionally filtered by category."""
+        stmt = (
+            select(Product)
+            .options(selectinload(Product.seller))
+            .order_by(Product.id)
+            .offset(offset)
+            .limit(limit)
+        )
+        if category:
+            stmt = stmt.where(Product.category == category)
+        result = await self._db.execute(stmt)
+        return list(result.scalars().all())

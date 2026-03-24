@@ -11,7 +11,9 @@ def mock_pinecone_client():
     """Patches Pinecone at the module level so PineconeVectorService.__init__ works."""
     with patch("app.services.vector_store.Pinecone") as MockPinecone:
         client = MagicMock()
-        client.list_indexes.return_value = [{"name": "clothing-embeddings"}]
+        indexes_obj = MagicMock()
+        indexes_obj.names.return_value = ["clothing-embeddings"]
+        client.list_indexes.return_value = indexes_obj
         mock_index = MagicMock()
         client.Index.return_value = mock_index
         MockPinecone.return_value = client
@@ -98,7 +100,9 @@ class TestEnsureIndex:
     def test_creates_index_when_missing(self):
         with patch("app.services.vector_store.Pinecone") as MockPinecone:
             client = MagicMock()
-            client.list_indexes.return_value = []  # no existing indexes
+            indexes_obj = MagicMock()
+            indexes_obj.names.return_value = []  # no existing indexes
+            client.list_indexes.return_value = indexes_obj
             client.Index.return_value = MagicMock()
             MockPinecone.return_value = client
 

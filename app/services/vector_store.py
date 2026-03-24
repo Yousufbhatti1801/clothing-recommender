@@ -6,7 +6,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from functools import lru_cache
 
-from pinecone import Index, Pinecone
+from pinecone import Index, Pinecone, ServerlessSpec
 
 from app.core.config import get_settings
 from app.core.retry import with_retry
@@ -36,15 +36,19 @@ class PineconeVectorService:
     def _ensure_index(self) -> None:
         """Create the index if it does not already exist."""
         index_name = self._settings.pinecone_index_name
-        existing = {idx["name"] for idx in self._client.list_indexes()}
+        existing = set(self._client.list_indexes().names())
         if index_name in existing:
             return
         log.info("Pinecone index '%s' not found — creating…", index_name)
-        # Default to cosine metric since embeddings are L2-normalised.
+        # Serverless spec — cloud/region pulled from settings environment field.
         self._client.create_index(
             name=index_name,
             dimension=512,
             metric="cosine",
+            spec=ServerlessSpec(
+                cloud="aws",
+                region=self._settings.pinecone_environment,
+            ),
         )
         log.info("Pinecone index '%s' created.", index_name)
 
@@ -101,6 +105,20 @@ class PineconeVectorService:
             )
             for match in matches[:top_k]
         ]
+
+    @with_retry(max_attempts=3, backoff=0.5)
+    def delete(self, ids: list[str], namespace: str) -> None:
+        """
+        Delete vectors by ID from a specific namespace (with retry).
+
+        Args:
+            ids:       List of Pinecone vector IDs to remove.
+            namespace: Namespace (equals the GarmentCategory value, e.g. \"shirt\").
+        """
+        if not ids:
+            return
+        self._index.delete(ids=ids, namespace=namespace)
+        log.info("Deleted %d vector(s) from namespace='%s'.", len(ids), namespace)
 
 
 @lru_cache(maxsize=1)

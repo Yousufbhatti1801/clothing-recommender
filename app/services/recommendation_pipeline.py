@@ -8,8 +8,11 @@ and returns results grouped by garment category without needing a catalog DB.
 """
 from __future__ import annotations
 
+import asyncio
+
 from PIL import Image
 
+from app.core.executors import get_ml_executor
 from app.models.schemas import (
     GarmentCategory,
     PipelineCategoryResult,
@@ -27,10 +30,10 @@ class RecommendationPipeline:
     Steps
     -----
     1. Accept a PIL Image (already loaded from the upload).
-    2. Run YOLOv8 clothing detection → bounding boxes for shirts / pants / shoes.
+    2. Run YOLOv8 clothing detection → bounding boxes for all 6 fashion categories.
     3. Crop each bounding box from the original image.
     4. Batch-encode all crops with CLIP → 512-d L2-normalised vectors.
-    5. Query Pinecone per category (each category is a separate namespace).
+    5. Query Pinecone per category concurrently (each category is a separate namespace).
     6. Return a PipelineRecommendationResponse grouped by clothing type.
     """
 
@@ -63,35 +66,75 @@ class RecommendationPipeline:
         if pipeline_result.total == 0:
             return PipelineRecommendationResponse(
                 shirts=[], pants=[], shoes=[],
+                jackets=[], dresses=[], skirts=[],
                 total_detections=0,
                 total_matches=0,
             )
 
         price_filter = {"price": {"$lte": budget}} if budget is not None else None
 
-        # ── Steps 5-6: search Pinecone per category, group results ──────────
-        shirts_results = self._search_category(
-            pipeline_result.shirts, GarmentCategory.SHIRT, price_filter=price_filter
-        )
-        pants_results = self._search_category(
-            pipeline_result.pants, GarmentCategory.PANTS, price_filter=price_filter
-        )
-        shoes_results = self._search_category(
-            pipeline_result.shoes, GarmentCategory.SHOES, price_filter=price_filter
+        # ── Steps 5-6: search all 6 Pinecone namespaces concurrently ────────
+        (
+            shirts_results,
+            pants_results,
+            shoes_results,
+            jackets_results,
+            dresses_results,
+            skirts_results,
+        ) = await asyncio.gather(
+            self._search_category_async(
+                pipeline_result.shirts, GarmentCategory.SHIRT, price_filter
+            ),
+            self._search_category_async(
+                pipeline_result.pants, GarmentCategory.PANTS, price_filter
+            ),
+            self._search_category_async(
+                pipeline_result.shoes, GarmentCategory.SHOES, price_filter
+            ),
+            self._search_category_async(
+                pipeline_result.jackets, GarmentCategory.JACKET, price_filter
+            ),
+            self._search_category_async(
+                pipeline_result.dresses, GarmentCategory.DRESS, price_filter
+            ),
+            self._search_category_async(
+                pipeline_result.skirts, GarmentCategory.SKIRT, price_filter
+            ),
         )
 
         total_matches = (
             sum(len(r.matches) for r in shirts_results)
             + sum(len(r.matches) for r in pants_results)
             + sum(len(r.matches) for r in shoes_results)
+            + sum(len(r.matches) for r in jackets_results)
+            + sum(len(r.matches) for r in dresses_results)
+            + sum(len(r.matches) for r in skirts_results)
         )
 
         return PipelineRecommendationResponse(
             shirts=shirts_results,
             pants=pants_results,
             shoes=shoes_results,
+            jackets=jackets_results,
+            dresses=dresses_results,
+            skirts=skirts_results,
             total_detections=pipeline_result.total,
             total_matches=total_matches,
+        )
+
+    async def _search_category_async(
+        self,
+        garment_embeddings: list[GarmentEmbedding],
+        category: GarmentCategory,
+        price_filter: dict | None = None,
+    ) -> list[PipelineCategoryResult]:
+        """Async wrapper — runs the synchronous Pinecone query off the event loop."""
+        if not garment_embeddings:
+            return []
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(
+            get_ml_executor(),
+            lambda: self._search_category(garment_embeddings, category, price_filter),
         )
 
     def _search_category(

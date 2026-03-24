@@ -29,7 +29,7 @@ class DetectionService:
         Returns a ClothingDetectionResponse with results grouped per category
         and tiny bounding-box detections filtered out (< 1 % of image area).
         """
-        raw = await self._detector.detect_targets_async(image)
+        raw = await self._detector.detect_all_fashion_async(image)
         img_area = image.width * image.height
 
         filtered: list[DetectedGarment] = []
