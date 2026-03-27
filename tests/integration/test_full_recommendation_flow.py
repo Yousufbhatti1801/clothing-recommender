@@ -108,7 +108,7 @@ def _build_recommendation_service(
     catalog = _make_catalog_mock(products_map)
 
     svc = RecommendationService(
-        detection=DetectionService(detector=yolo),
+        detection=DetectionService(detector=yolo, clip_fallback=False),
         embedding=EmbeddingService(encoder=clip),
         search=SearchService(index=index),
         catalog=catalog,

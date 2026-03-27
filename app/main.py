@@ -55,8 +55,25 @@ async def lifespan(app: FastAPI):
 
     # ── Database ──────────────────────────────────────────────────────────
     log.info("Creating database tables if they don't exist…")
+    from sqlalchemy import text as _sql_text
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Phase 7: add extended attribute columns to existing products tables.
+        # These are no-ops (IF NOT EXISTS) on fresh installs where create_all
+        # already created the columns from the updated ORM definition.
+        for _stmt in [
+            "ALTER TABLE products ADD COLUMN IF NOT EXISTS colour VARCHAR(50)",
+            "ALTER TABLE products ADD COLUMN IF NOT EXISTS material VARCHAR(100)",
+            "ALTER TABLE products ADD COLUMN IF NOT EXISTS style VARCHAR(100)",
+            "ALTER TABLE products ADD COLUMN IF NOT EXISTS gender VARCHAR(20)",
+            "ALTER TABLE products ADD COLUMN IF NOT EXISTS size_available TEXT",
+            "ALTER TABLE products ADD COLUMN IF NOT EXISTS occasion VARCHAR(100)",
+            "CREATE INDEX IF NOT EXISTS ix_products_category ON products (category)",
+            "CREATE INDEX IF NOT EXISTS ix_products_category_price ON products (category, price)",
+            "CREATE INDEX IF NOT EXISTS ix_products_colour ON products (colour)",
+        ]:
+            await conn.execute(_sql_text(_stmt))
+    log.info("Database schema up to date.")
 
     # ── Pinecone ──────────────────────────────────────────────────────────
     log.info("Initialising Pinecone connection…")

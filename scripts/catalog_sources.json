@@ -1,0 +1,50 @@
+{
+  "_comment": "Dataset registry for the catalog ingestion pipeline. Add new sources here.",
+
+  "kaggle_fashion_small": {
+    "name": "Fashion Product Images Small",
+    "provider": "Kaggle",
+    "author": "paramaggarwal",
+    "url": "https://www.kaggle.com/datasets/paramaggarwal/fashion-product-images-small",
+    "download_instructions": [
+      "pip install kaggle",
+      "kaggle datasets download -d paramaggarwal/fashion-product-images-small",
+      "mkdir -p data/kaggle_fashion_small",
+      "unzip fashion-product-images-small.zip -d data/kaggle_fashion_small/"
+    ],
+    "local_extract_dir": "data/kaggle_fashion_small",
+    "styles_csv": "styles.csv",
+    "images_subdir": "images",
+    "image_filename_pattern": "{id}.jpg",
+    "image_size_px": [60, 80],
+    "total_items_approx": 44000,
+    "phase7_targets": {
+      "total": 1000,
+      "per_category": 167,
+      "categories": ["shirt", "pants", "shoes", "jacket", "dress", "skirt"]
+    },
+    "csv_columns": {
+      "id":            "id",
+      "display_name":  "productDisplayName",
+      "gender":        "gender",
+      "master_cat":    "masterCategory",
+      "sub_cat":       "subCategory",
+      "article_type":  "articleType",
+      "colour":        "baseColour",
+      "season":        "season",
+      "year":          "year",
+      "usage":         "usage"
+    },
+    "category_mapping": {
+      "shirt":  ["Tshirts", "Shirts", "Tops", "Sweatshirts", "Sweaters", "Kurtas", "Kurta Sets"],
+      "jacket": ["Jackets", "Blazers", "Waistcoat", "Windcheater"],
+      "pants":  ["Jeans", "Casual Trousers", "Formal Trousers", "Track Pants & Joggers",
+                 "Shorts", "Leggings", "Capris", "Patiala", "Salwar"],
+      "shoes":  ["Casual Shoes", "Formal Shoes", "Sports Shoes", "Boots",
+                 "Sandals", "Flats", "Heels", "Flip Flops", "Sports Sandals"],
+      "dress":  ["Dresses", "Jumpsuit", "Rompers", "Night suits"],
+      "skirt":  ["Skirts"]
+    },
+    "notes": "Images are 60x80 JPEGs stored locally as images/{id}.jpg. CLIP resizes to 224x224 internally."
+  }
+}

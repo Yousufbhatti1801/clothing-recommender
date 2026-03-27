@@ -22,6 +22,12 @@ from app.models.schemas import (
 from app.services.detect_and_embed import DetectAndEmbedPipeline, GarmentEmbedding
 from app.services.vector_store import PineconeVectorService, get_vector_service
 
+# ── Quality thresholds ───────────────────────────────────────────────────────
+# Minimum cosine similarity for a Pinecone match to be included in results.
+# CLIP cosine scores typically range 0.55–0.95 for genuinely similar images.
+# Anything below 0.60 is visually dissimilar and confuses users.
+_MIN_MATCH_SCORE: float = 0.60
+
 
 class RecommendationPipeline:
     """
@@ -166,6 +172,7 @@ class RecommendationPipeline:
                     image_url=hit.metadata.get("image_url") or None,
                 )
                 for hit in vector_hits
+                if hit.score >= _MIN_MATCH_SCORE  # drop visually dissimilar junk
             ]
             results.append(
                 PipelineCategoryResult(

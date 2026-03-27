@@ -15,12 +15,23 @@ __pycache__/
 dist/
 build/
 
+# macOS metadata
+.DS_Store
+**/.DS_Store
+
+# Large dataset archives
+*.zip
+*.tar.gz
+*.tar.bz2
+
 # Generated training datasets (regenerate with scripts/prepare_fashionpedia.py)
 data/
 
 # User uploads (runtime files, not source code)
-uploads/*.jpg
-uploads/*.jpeg
-uploads/*.png
-uploads/*.webp
-uploads/annotated/
+uploads/
+
+# Downloaded real test images (large files, regenerate with scripts/download_test_images.py)
+tests/real_images/
+
+# nohup / process logs
+nohup.out

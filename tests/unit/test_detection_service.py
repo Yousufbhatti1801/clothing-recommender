@@ -30,7 +30,7 @@ class TestDetect:
     async def test_empty_when_no_detections(self, sample_image):
         detector = MagicMock()
         detector.detect_async = AsyncMock(return_value=[])
-        svc = DetectionService(detector=detector)
+        svc = DetectionService(detector=detector, clip_fallback=False)
         assert await svc.detect(sample_image) == []
 
 
@@ -97,6 +97,6 @@ class TestDetectAndCrop:
     async def test_empty_detections(self, sample_image):
         detector = MagicMock()
         detector.detect_async = AsyncMock(return_value=[])
-        svc = DetectionService(detector=detector)
+        svc = DetectionService(detector=detector, clip_fallback=False)
         pairs = await svc.detect_and_crop(sample_image)
         assert pairs == []

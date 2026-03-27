@@ -357,7 +357,7 @@ class TestPipelineIntegration:
 
         mock_clip = MagicMock(spec=CLIPEncoder)
 
-        det_svc = DetectionService(detector=mock_det)
+        det_svc = DetectionService(detector=mock_det, clip_fallback=False)
         emb_svc = EmbeddingService(encoder=mock_clip)
         pipeline = DetectAndEmbedPipeline(detection_service=det_svc, embedding_service=emb_svc)
 

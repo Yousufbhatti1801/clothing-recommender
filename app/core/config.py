@@ -26,7 +26,9 @@ class Settings(BaseSettings):
     pinecone_index_name: str = "clothing-embeddings"
 
     # CLIP
-    clip_model_name: str = "openai/clip-vit-base-patch32"
+    # Phase 8: fashion-specific fine-tune of ViT-B/32. Same 512-d output as the
+    # baseline openai/clip-vit-base-patch32 — Pinecone index dimension unchanged.
+    clip_model_name: str = "patrickjohncyh/fashion-clip"
     clip_device: str = "cpu"  # "cuda" for GPU
 
     # YOLOv8

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, String, Text, func
+from sqlalchemy import DateTime, Float, ForeignKey, Index, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -45,6 +45,16 @@ class Product(Base):
     # Pinecone vector ID for this product
     vector_id: Mapped[str | None] = mapped_column(String(255), index=True)
 
+    # ── Phase 7: Extended fashion attributes ─────────────────────────────
+    # Used for Pinecone metadata filtering (colour, gender) and future
+    # hybrid search (Phase 9). All nullable — existing seed data is unaffected.
+    colour: Mapped[str | None] = mapped_column(String(50))          # e.g. "navy", "black"
+    material: Mapped[str | None] = mapped_column(String(100))       # e.g. "cotton", "leather"
+    style: Mapped[str | None] = mapped_column(String(100))          # e.g. "casual", "formal"
+    gender: Mapped[str | None] = mapped_column(String(20))          # "men"|"women"|"unisex"
+    size_available: Mapped[str | None] = mapped_column(Text)        # JSON: ["S","M","L","XL"]
+    occasion: Mapped[str | None] = mapped_column(String(100))       # e.g. "casual", "party"
+
     seller_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("sellers.id"), nullable=True
     )
@@ -55,4 +65,13 @@ class Product(Base):
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    # ── Indexes ───────────────────────────────────────────────────────────
+    # Defined here so create_all creates them on fresh installs.
+    # For existing DBs the migrate_add_product_attrs.py script adds them.
+    __table_args__ = (
+        Index("ix_products_category", "category"),
+        Index("ix_products_category_price", "category", "price"),
+        Index("ix_products_colour", "colour"),
     )

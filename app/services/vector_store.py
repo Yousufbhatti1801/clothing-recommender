@@ -6,6 +6,8 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from functools import lru_cache
 
+import numpy as np
+
 from pinecone import Index, Pinecone, ServerlessSpec
 
 from app.core.config import get_settings
@@ -87,8 +89,11 @@ class PineconeVectorService:
             filter: Optional Pinecone metadata filter, e.g.
                     ``{"price": {"$lte": 100.0}}``.
         """
+        # Convert to plain Python floats — numpy.float32 is not serialisable
+        # by the Pinecone client's internal model_to_dict serialiser.
+        vec = values.tolist() if isinstance(values, np.ndarray) else [float(v) for v in values]
         query_kwargs: dict = dict(
-            vector=list(values),
+            vector=vec,
             top_k=top_k,
             namespace=namespace,
             include_metadata=with_metadata,

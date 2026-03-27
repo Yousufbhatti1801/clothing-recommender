@@ -73,7 +73,7 @@ class TestEndToEndPipeline:
 
         clip = MagicMock()
 
-        detection_svc = DetectionService(detector=yolo)
+        detection_svc = DetectionService(detector=yolo, clip_fallback=False)
         embedding_svc = EmbeddingService(encoder=clip)
 
         detect_embed = DetectAndEmbedPipeline(
